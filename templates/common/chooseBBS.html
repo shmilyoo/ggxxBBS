@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>选择论坛</title>
+</head>
+<body>
+{% if user.is_authenticated %}
+{{ user.name }}
+{% else %}
+not user
+{% endif %}
+    <div>用户：{{ user.name }} 欢迎访问{{ config.bbs_sysName }}</div>
+    {% for value in config.bbs_names.values %}
+        <div><a href="{% url 'index' value.name %}">{{ value.cnName }}</a></div>
+    {% endfor %}
+</body>
+</html>

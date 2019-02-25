@@ -1,0 +1,289 @@
+hr {
+    color: #CDCDCD;
+}
+
+.picker {
+    /*datetime_picker*/
+    margin: 0;
+    padding: 0;
+    background-color: #eeeeee;
+    border: 0;
+    width: 70px;
+    height: 20px;
+    border-right: 20px solid #000000;
+    line-height: 20px;
+}
+
+.quote {
+    background: #F9F9F9 url("/static/images/quote1.gif") no-repeat 20px 6px;
+    margin: 10px 0;
+    padding: 10px 10px 10px 65px;
+    zoom: 1;
+
+}
+
+.quote_block {
+    display: inline-block;
+    margin: 0;
+    min-height: 50px;
+    padding: 0 65px 5px 0;
+    background: url("/static/images/quote2.gif") no-repeat 100% 100%;
+    zoom: 1;
+}
+
+.quote_author {
+    margin-top: 10px;
+    color: #777;
+}
+
+* {
+    word-wrap: break-word;
+}
+
+a {
+    color:#333;
+    text-decoration: none;
+}
+
+div {
+    display: block;
+}
+
+body {
+    background-color: #FFFFFF;
+}
+
+em {
+    color: #C00;
+    font-style: normal;
+}
+
+.topic_table td{
+    border-bottom: 1px solid #C2D5E3;
+    padding: 3px 0;
+}
+
+.topic_table .fit2l {
+    line-height: 16px;
+    font-size: 11pt;
+}
+
+.topic_left {
+    width: 160px;
+    background: #E5EDF2;
+    overflow: hidden;
+    border-right: 1px solid #C2D5E3;
+    vertical-align: top;
+}
+
+.topic_right {
+    /*width: 100%;*/
+    padding: 0 20px;
+    vertical-align: top;
+}
+
+.signature {
+    padding:15px 0;
+    background: url("/static/images/sigline.gif") no-repeat 0 0;
+    line-height: 12px;
+
+}
+
+.post_list table {
+    width: 100%;
+}
+
+#uc_menu {
+    padding: 10px 0;
+    width: 150px;
+    position: relative;
+    float: left;
+    background-color: #dff1ff;
+    border-right: 1px solid #CDCDCD;
+}
+
+#uc_menu .menu_title {
+    border-bottom: 1px dashed #CDCDCD;
+}
+
+#uc_menu .a {
+    line-height: 30px;
+    padding-left: 10px;
+    border-bottom: 1px dashed #CDCDCD;
+}
+
+#uc_menu a {
+    display: block;
+    text-decoration: none !important;
+}
+
+#uc_menu .active {
+    margin: -1px -1px -1px 0;
+    border-top: 1px solid #CDCDCD;
+    border-bottom: 1px solid #CDCDCD;
+    background: #FFF;
+}
+
+#uc_middle {
+    border: 1px solid #CDCDCD;
+    overflow: hidden;
+}
+
+#uc_main {
+    padding: 10px 20px;
+    float: left;
+    width: 900px;
+}
+
+#uc_main .a{
+    display: block;
+    text-decoration: none !important;
+}
+
+.tab {
+    border-bottom: 1px solid #ccc;
+    margin-top: 10px;
+    padding-left: 10px;
+}
+
+.tab .active{
+    background-color: #FFF;
+    border-bottom: 1px solid #FFF;
+}
+
+.tab span{
+    margin-bottom: -1px;
+    margin-right: 5px;
+    background-color: #dff1ff;
+    border: 1px solid #CCC;
+}
+
+.tab a{
+    margin:15px;
+}
+
+.bbd {
+    border-bottom: 1px dashed #CDCDCD;
+    padding: 5px 0;
+}
+
+.gray_color {
+    color: #777;
+}
+
+.cl {
+    zoom:1;
+}
+
+.fl {
+    float:left;
+}
+
+.fr {
+    float:right;
+}
+
+.cb {
+    clear:both;
+}
+
+.pl10 {
+    padding-left: 10px;
+}
+
+.pr10 {
+    padding-right: 10px;
+}
+
+.plr10 {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.ptb10 {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.pl20 {
+    padding-left: 20px;
+}
+
+.pr20 {
+    padding-right: 20px;
+}
+
+.plr20 {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.m5tb {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.ul_flow {
+    margin: 0;
+    padding-left: 0;
+}
+
+.ul_flow li {
+    float: left;
+    overflow: hidden;
+    list-style: none;
+    padding: 0 20px;
+    width: 250px;
+}
+
+.list_user {
+    background-color: #F9F9F9;
+    height: 60px;
+    margin-right: 20px;
+    border: 1px solid #F3F3F3;
+    overflow: hidden;
+}
+
+.oh {
+    overflow: hidden;
+}
+
+.manager_area {
+    display: none;
+    margin: 10px;
+}
+
+.paginator,.paginator_current {
+    display: inline;
+    margin-left: 4px;
+    padding: 0 8px;
+    height: 26px;
+    border: 1px solid #C2D5E3;
+    color: #333;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.paginator_current {
+    background: #E5EDF2 no-repeat;
+}
+
+.subject_link {
+    display: inline;
+    margin-left: 4px;
+    padding: 0 8px;
+    height: 26px;
+    border: 1px solid #C2D5E3;
+    color: #333;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.subject_link_action {
+    background: #E5EDF2 no-repeat;
+}
+
+#simplemodal-overlay {background-color:#000;}
+/* Container */
+#simplemodal-container { height:300px;width:400px; color:#bbb; background-color:#333; border:4px solid #444; padding:12px;}
+#simplemodal-container a.modalCloseImg {background:url("/static/images/x.gif") no-repeat; width:25px; height:29px; display:inline; z-index:3200; position:absolute; top:-10px; right:-10px; cursor:pointer;}

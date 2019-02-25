@@ -1,0 +1,27 @@
+{% extends 'account/base.html' %}
+
+{% block main %}
+    <div>
+        <div class="tab">
+            <span {% if info_type == "summary" %}class="active"{% endif %}>
+                <a href="{% url 'uc_info' 'summary' %}{% if name %}?name={{ name }}{% endif %}">
+                    个人资料
+                </a></span>
+            <span {% if info_type == "topic" %}class="active"{% endif %}>
+                <a href="{% url 'uc_info' 'topic' %}{% if name %}?name={{ name }}{% endif %}">
+                    主题
+                </a></span>
+            <span {% if info_type == "post" %}class="active"{% endif %}>
+                <a href="{% url 'uc_info' 'post' %}{% if name %}?name={{ name }}{% endif %}">
+                    回复
+                </a></span>
+            {% if viewer == user %}
+            <span {% if info_type == "fav" %}class="active"{% endif %}>
+                <a href="{% url 'uc_info' 'fav' %}">
+                    收藏
+                </a></span>
+            {% endif %}
+        </div>
+        <div style="padding-top: 10px">{% block info_content %}{% endblock %}</div>
+    </div>
+{% endblock %}

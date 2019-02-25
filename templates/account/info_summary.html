@@ -1,0 +1,53 @@
+{% extends 'account/info_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}{{ viewer.nick_name }}的个人资料{% endblock %}
+{% block info_content %}
+    <div class="bbd">
+        <div class="fl">
+            <img width="45" src="{{ viewer.avatar|default:config.default_avatar_path }}">
+        </div>
+        <div class="fl pl10">
+            <div>{{ viewer.nick_name }}({{ viewer.name }})
+                {{ viewer.gender|get_sex_img_html|safe }}
+                {% if viewer.name != user.name %}
+                    <a href="{% url 'uc_inform' 'send_message' %}?to={{ viewer.name }}">
+                                        <img src="{% static 'images/message.gif' %}">发消息</a>
+                {% endif %}
+            </div>
+            <div>用户组:{{ viewer.ug_name }}
+                | 积分:{{ viewer.credits }}
+                | 主题数:<a href="{% url 'uc_info' 'topic' %}{% if name %}?name={{ name }}{% endif %}">{{ viewer.t_num }}</a>
+                | 回帖数:<a href="{% url 'uc_info' 'post' %}{% if name %}?name={{ name }}{% endif %}">{{ viewer.p_num }}</a>
+                | 邮箱:{{ viewer.email|default:"未填" }}
+            </div>
+        </div>
+        <div class="cb"></div>
+    </div>
+    <div class="bbd cl">
+        <ul class="ul_flow cl">
+        {% if user.user_group.can_ip %}
+            <li>注册IP: {{ viewer.reg_ip }}</li>
+            <li>最后活动IP: {{ viewer.last_visit_ip }}</li>
+        {% endif %}
+            <li>注册时间: {{ viewer.reg_time|str_datetime }}</li>
+            <li>最后访问时间: {{ viewer.last_visit|str_datetime }}</li>
+        </ul>
+        <div class="cb"></div>
+    </div>
+    <div class="bbd">
+        <div>个人简介:{{ viewer.bio|default:"  ..." }}</div>
+        <div>
+            <div class="fl">个人签名:</div>
+            <div class="fl pl10">{{ viewer.signature|safe|default:"..." }}</div>
+            <div class="cb"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{#{% block script_at_page_end %}#}
+{#    <script>#}
+{#        $(function () {#}
+{#        })#}
+{#    </script>#}
+{#{% endblock %}#}

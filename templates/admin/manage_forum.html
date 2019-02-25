@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <style>
+        .menu_deactive{
+            background-color: #777777
+        }
+        .menu_active{
+            background-color: #FFFFFF
+        }
+    </style>
+    {{ bbs_id }} {# 根据这个修改样式，默认显示哪个bbs #}
+    <div>
+        {% for bbs_name,tuple in forum_dic.items %}
+            <span
+                    {% if bbs_id == tuple.0 %}
+                        class="menu_active"
+                    {% else %}
+                        class="menu_deactive"
+                    {% endif %}>{{ bbs_name }}</span>
+        {% endfor %}
+    </div>
+    {% for tuple in forum_dic.values %}
+        <div
+                {% if bbs_id == tuple.0 %}
+                    class="show"
+                {% else %}
+                    class="hide"
+                {% endif %}>
+            <table>
+                <tr>
+                    <td>名称</td>
+                    <td>标签</td>
+                    <td>描述</td>
+                    <td>允许发帖</td>
+                    <td>版主</td>
+                    <td colspan="2">排序</td>
+                    <td>编辑</td>
+                    <td>删除</td>
+                </tr>
+                <tr>
+                    <td colspan="9">首页</td>
+                </tr>
+                {% for forum in tuple.1 %}
+                    <tr style="background-color: {% cycle lemonchiffon,lightblue %}">
+                        <td>{{ forum.step_name|safe }}</td>
+                        <td>{{ forum.tag }}</td>
+                        <td>{{ forum.descr|striptags|truncatechars:20 }}</td>
+                        <td><input disabled="disabled" type="checkbox"{% if forum.allow_topic %} checked="checked"{% endif %}/></td>
+                        <td>
+                            <button class="edit_moderator_btn" value="{% url 'admin_edit_forum_moderator' forum.id %}">编辑</button>
+                        </td>
+                        <td>
+                            <button class="sort_btn_up" value={{ forum.id }}>向上</button>
+                        </td>
+                        <td>
+                            <button class="sort_btn_down" value={{ forum.id }}>向下</button>
+                        </td>
+                        <td>
+                            <button class="editForumBtn" value="{% url 'admin_edit_forum' forum.id %}">编辑</button>
+                        </td>
+                        <td>
+                            <button class="delForumBtn" value={{ forum.id }}>删除</button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="9">&nbsp;&nbsp;&nbsp;&nbsp;尚未添加版块</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div><br>
+            <hr>
+            <br></div>
+    {% endfor %}
+</div>
+</body>
+<script>
+    $(function () {
+        $(".edit_moderator_btn").click(function(){
+            $("#main").load($(this).val());
+        });
+        $(".sort_btn_up").click(function () {
+            //admin_seq_forum
+            $(this).attr("disabled",true);   {# 防止连续点击造成多次效果 #}
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_seq_forum' %}",
+                data: {"forum_id": $(this).val(), "direction": "up"},
+                dataType: "html",
+                success: function (data) {
+                    $("#main").html(data);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                    $(this).attr("disabled",false);
+                }
+            });
+        });
+        $(".sort_btn_down").click(function () {
+            $(this).attr("disabled",true);   {# 防止连续点击造成多次效果 #}
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_seq_forum' %}",
+                data: {"forum_id": $(this).val(), "direction": "down"},
+                dataType: "html",
+                success: function (data) {
+                    $("#main").html(data);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                    $(this).attr("disabled",false);
+                }
+            });
+        });
+        $(".editForumBtn").click(function () {
+            $("#main").load($(this).val());
+        });
+        $(".delForumBtn").click(function () {
+            var result = confirm("版块含有子版块或有帖子时无法删除，确认继续。");
+            if (result)
+                alert("ok");
+            else
+                alert("abort");
+        });
+    });
+</script>
+</html>

@@ -1,0 +1,19 @@
+<input id="search_input" type="text" placeholder="请输入搜索内容" style="width: auto;height: 18px"><select
+        id="search_type" style="width: 50px;font-size: small">
+    <option value="title" selected>标题</option>
+    <option value="user">用户</option>
+</select>
+<button id="search_btn" onclick="search_action()">搜索</button>
+<script>
+    function search_action() {
+        var text = $("#search_input").val().trim();
+        if (text == "")
+            alert("请输入搜索内容");
+        else {
+            var type = $("#search_type").val();
+            var kw = text;
+            location.href = "{% url 'search' bbs.name %}?type=" + type + "&kw=" + text;
+        }
+        return false;
+    }
+</script>

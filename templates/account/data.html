@@ -1,0 +1,17 @@
+{% extends 'account/base.html' %}
+{% load staticfiles %}
+{% block titlePrefix %}用户资料{% endblock %}
+{% block css_and_js %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+{% endblock %}
+
+{% block main %}
+    <div>
+        <form action="" method="post">
+            <p>帐号: {{ user.name }}</p>
+            {{ form.as_p }}
+            <p><input type="submit" value="提交"></p>
+        </form>
+    </div>
+{% endblock %}

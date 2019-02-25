@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <label for="search_user_name">搜索用户:</label>
+    <input id="search_user_name" type="text" placeholder="输入用户名称" value="{{ search_user_name }}"
+           onkeypress="if(event.keyCode==13) {$('#search_user_btn').click();}"/>
+    <button id="search_user_btn">搜索</button>
+</div>
+<br>
+
+<div>
+    <input id="order1" hidden="hidden" value="{{ field }}">
+    <input id="order2" hidden="hidden" value="{{ order }}">
+    <table>
+        <tr>
+            {#        'name','gender','last_visit','reg_time','reg_ip','is_active','is_admin'#}
+            <td>序号</td>
+            <td><a class="order_link" href="javascript:void(0)" data-field="name">姓名</a></td>
+            <td>性别</td>
+            <td><a class="order_link" href="javascript:void(0)" data-field="last_visit">最后访问</a></td>
+            <td><a class="order_link" href="javascript:void(0)" data-field="reg_time">注册时间</a></td>
+            <td>注册ip</td>
+            <td>最后访问ip</td>
+            <td><a class="order_link" href="javascript:void(0)" data-field="is_active">是否禁用</a></td>
+            <td><a class="order_link" href="javascript:void(0)" data-field="is_admin">是否管理员</a></td>
+        </tr>
+        {% for u in users %}
+            <tr>
+                <td>
+                    {{ forloop.counter|add:users.paginator.page_base_num }}
+                </td>
+                <td>
+                    {{ u.name }}
+                </td>
+                <td>
+                    {% if u.gender == 1 %}男{% elif u.gender == 0 %}女{% else %}保密{% endif %}
+                </td>
+                <td>{{ u.last_visit|date:"Y.n.d" }}</td>
+                <td>{{ u.reg_time|date:"Y.n.d" }}</td>
+                <td>{{ u.reg_ip }}</td>
+                <td>{{ u.last_visit_ip }}</td>
+                <td><input name="ckb_active" type="checkbox" value="{{ u.name }}"
+                           {% if not u.is_active %}checked="checked"{% endif %}>
+                </td>
+                <td><input name="ckb_admin" type="checkbox" value="{{ u.name }}"
+                           {% if u.is_admin %}checked="checked"{% endif %}></td>
+            </tr>
+
+        {% empty %}
+            <tr>
+                <td colspan="8">没有用户</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <br>
+    {% with list=users %}
+        {% include 'common/paginator_nav.html' %}
+    {% endwith %}
+</div>
+</body>
+<script>
+    function go_to_page(num, field, order, search_user_name) {
+        var url = "{% url 'admin_user_manage_filter' 999999 'field' 'desc' %}".
+                replace('999999', num.toString()).replace('field', field).replace('desc', order);
+        $.ajax({
+            type: "GET",
+            url: url,
+            data: {"search_user_name": search_user_name},
+            dataType: "html",
+            success: function (data) {
+                $("#main").html(data);
+            },
+            error: function () {
+                alert("信息提交失败");
+            }
+        });
+    }
+    $(function () {
+        var order1 = $("#order1");
+        var order2 = $("#order2");
+        $(".order_link").click(function () {
+            if ($(this).data("field") == order1.val()) {
+                if (order2.val() == "asc")
+                    order2.val("desc");
+                else
+                    order2.val("asc");
+            }
+            else {
+                order1.val($(this).data("field"));
+                order2.val("asc");
+            }
+            go_to_page(1, order1.val(), order2.val(), "{{ search_user_name }}");
+        });
+        $(".paginator").click(function () {
+            go_to_page($(this).data("page"), order1.val(), order2.val(), "{{ search_user_name }}");
+        });
+        $("#search_user_btn").click(function () {
+            var name_filter = $("#search_user_name").val().trim();
+            go_to_page(1, "name", "asc", name_filter);
+        });
+        $("input[name='ckb_active']").click(function () {
+            var check = $(this).prop("checked");
+            var name = $(this).val();
+            if (check) {
+                if (name == "admin") {
+                    alert("不能禁用默认管理员");
+                    return false;
+                }
+                var message = "是否禁用此用户";
+            }
+            else
+                var message = "是否解禁此用户";
+            if (!confirm(message))
+                return false;
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_user_active' %}",
+                data: {"name": name, "check": check},
+                dataType: "json",
+                success: function (data) {
+                    if (data['success'])
+                        alert("更新成功");
+                    else {
+                        alert(data['message']);
+                        $("#main").load("{% url 'admin_user_manage' %}");
+                    }
+                },
+                error: function () {
+                    alert("信息提交失败");
+                    return false;
+                }
+            });
+        });
+        $("input[name='ckb_admin']").click(function () {
+            var check = $(this).prop("checked");
+            var name = $(this).val();
+            if (check)
+                var message = "是否将'" + name + "'设置为管理员";
+            else {
+                if (name == "admin") {
+                    alert("不能取消默认管理员");
+                    return false;
+                }
+                var message = "是否取消'" + name + "'的管理员权限";
+            }
+            if (!confirm(message))
+                return false;
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_user_admin' %}",
+                data: {"name": name, "check": check},
+                dataType: "json",
+                success: function (data) {
+                    if (data['success'])
+                        alert("更新成功");
+                    else {
+                        alert(data['message']);
+                        $("#main").load("{% url 'admin_user_manage' %}");
+                    }
+                },
+                error: function () {
+                    alert("信息提交失败");
+                    return false;
+                }
+            });
+        });
+    });
+</script>
+</html>

@@ -1,0 +1,388 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load humanize %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}{{ forum.name }}{% endblock titlePrefix %}
+{% block css_and_js %}
+    <script src="{% static 'js/json2.js' %}"></script>
+{% endblock %}
+{% block main %}
+    <input type="hidden" id="get_subject" value="{{ get.subject }}">
+    <input type="hidden" id="get_digest" value="{{ get.digest }}">
+    <input type="hidden" id="get_order_by" value="{{ get.order_by }}">
+    <input type="hidden" id="get_order" value="{{ get.order }}">
+    <input type="hidden" id="get_page" value="{{ get.page }}">
+    {{ forum.name }}-{{ forum.tag }}
+    -{{ user.name }}
+    <hr>
+    <div>
+        {% include 'common/search_widget.html' %}
+    </div>
+    <!-- 版块层级导航条开始 -->
+    <div>
+        <a href="{% url 'index' bbs.name %}">论坛首页</a>
+        {% for path in forum.path_lists %}
+            &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name path.tag %}">{{ path.name }}</a>
+        {% endfor %}
+        &nbsp;>&nbsp;{{ forum.name }}
+    </div>
+    <!-- 版块层级导航条结束 -->
+    <!-- 论坛版块信息开始 -->
+    <div style="border: #000000 solid 1px">
+        <div>
+            {{ forum.name }}&nbsp;&nbsp;今日:{{ forum.today_posts }} |
+            总数:{{ forum.topics }}/{{ forum.posts }}
+        </div>
+        {% if forum.moderator_names %}
+            <div>版主:
+                {% for m in forum.moderator_names %}
+                    <a href="{% url 'user_panel_name' m.name %}" target="_blank">{{ m.nick_name }}</a>
+                    {% if not forloop.last %},{% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if forum.descr %}
+            <div>{{ forum.descr }}</div>
+        {% endif %}
+        {% if forum.content %}
+            <div>{{ forum.content|safe }}</div>
+        {% endif %}
+    </div>
+    <!-- 论坛版块信息结束 -->
+
+    <!-- 论坛子版块信息开始 -->
+    {% if forum.children %}
+        <div>
+            <div style="background-color: #8dbbfd">子版块</div>
+            {% if forum.children|length > 1 %}
+                {#                本论坛有子论坛且大于1个，子论坛显示为紧凑模式#}
+                <div>
+                    <ul style="margin: 0;padding-top: 5px;padding-left: 0">
+                        {% for child in forum.children %}
+                            <li style="list-style: none;">
+                                <div>
+                                    <div style="float: left;"><img height="50" width="50" src="
+                                            {% if child.icon %}
+                                                {{ config.media_url }}{{ child.icon }}
+                                            {% else %}
+                                                {{ config.default_forum_icon_path }}
+                                            {% endif %}
+                                        "></div>
+                                    <div style="float:left">
+                                        <div>{{ child.name }}</div>
+                                        <div>主题数: {{ child.topics }}, 回帖数: {{ child.posts }}</div>
+                                        <div>最后发表: {{ child.update_time|naturaltime }}</div>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                {#                本论坛有1个子论坛显示为完整模式#}
+                <table style="width:100%;">
+                    {% for child in forum.children %}
+                        <tr>
+                            <td style="width:50px"><img height="50" width="50" src="
+                                {% if child.icon %}
+                                    {{ config.media_url }}{{ child.icon }}
+                                {% else %}
+                                    {{ config.default_forum_icon_path }}
+                                {% endif %}
+                            "></td>
+                            <td>
+                                <div>
+                                    <a href="{% url 'forum_index' bbs.name child.tag %}">{{ child.name }}</a>
+                                    <span style="color: #F26C4F;">({{ child.today_posts }})</span>
+                                </div>
+                                <div>{{ child.descr }}&nbsp;</div>
+                                <div>{% if child.moderators_list %}版主:
+                                    {% for m in child.moderators_list %}
+                                        <a href="{% url 'user_panel_name' m.name %}"
+                                           target="_blank">{{ m.nick_name }}</a>
+                                        {% if not forloop.last %},{% endif %}
+                                    {% endfor %}
+                                {% endif %}&nbsp;
+                                </div>
+                            </td>
+                            <td style="width:80px">{{ child.topics }}/{{ child.posts }}</td>
+                            <td style="width:300px">
+                                {% if child.last_topic_title %}
+                                    <div>
+                                        <a href="{% url 'topic' bbs.name child.last_topic_id %}">{{ child.last_topic_title }}</a>
+                                    </div>
+                                    <div>
+                                        {{ child.update_time|naturaltime }}&nbsp;
+                                        <a href="{% url 'user_panel_name' child.last_username %}">{{ child.last_nickname }}</a>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+        </div>
+    {% endif %}
+    <div class="cb"></div>
+    <!-- 论坛子版块信息结束 -->
+    <!-- 发帖按钮和页面导航条开始 -->
+    <div>
+        <div class="fl"><a href="{% url 'forum_new_topic' bbs.name forum.tag %}">发帖</a></div>
+        {% if is_manager %}
+            <div class="fl"><input type="checkbox" id="mcbx1" class="manager_cbx"><label for="mcbx1">管理</label></div>
+        {% endif %}
+        <div class="fr">
+            {% with list=topics %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+        <hr style="color: #CDCDCD">
+    </div>
+    <!-- 发帖按钮和页面导航条结束 -->
+    <!-- 管理区域开始 -->
+    {% include 'common/manage_btns.html' %}
+    <!-- 管理区域结束 -->
+    <!-- 主题分类开始 -->
+    <div>
+        <ul style="margin: 0;padding:0">
+            <li style="list-style: none;float:left"><a class="subject_link" href="{% url 'forum_index' bbs.name forum.tag %}">全部</a></li>
+            {% for subject in forum.subjects_count %}
+                <li style="list-style: none;float:left">&nbsp;&nbsp;
+                    <a class="subject_link{% if get.subject == subject.subject__id %} subject_link_action{% endif %}"
+                       href="javascript:void(0)" data-subject_id="{{ subject.subject__id }}">
+                    {{ subject.subject__name|default:"其他" }}:{{ subject.sub_num }} </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <!-- 主题分类结束 -->
+    <!-- 精华过滤和排序，以及表头开始 -->
+    <div class="topic_table cb">  {# forum index topics div #}
+        <table cellspacing="0" cellpadding="0" style="width: 100%">
+            <tr>
+                <td>
+                    <div class="tf">
+                        <a href="javascript:void(0)" id="digest_link">精华</a>&nbsp;
+                        排序:
+                        <a href="javascript:void(0)" class="order_link" data-order_by="post_time">发帖时间</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="last_reply_time">回复时间</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="all_hits">总点击数</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="day_hits">日点击数</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="week_hits">周点击数</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="month_hits">月点击数</a>&nbsp;
+                        <a href="javascript:void(0)" class="order_link" data-order_by="replies">回复数</a>&nbsp;
+                    </div>
+                </td>
+                <td width="150px">作者</td>
+                <td width="80px">回复/查看</td>
+                <td width="150px">最后发表</td>
+            </tr>
+            <!-- 精华过滤和排序，以及表头结束 -->
+            <!-- 帖子显示开始 -->
+            {% for topic in topics %}
+                <tr>
+                    <td>
+                        {% if is_manager %}
+                            <input class="manager_area manager_cb" value="{{ topic.id }}" type="checkbox"
+                                   style="display: none;">
+                        {% endif %}
+                        {% if topic.is_top_all %}
+                            <img width="15px" src="{% static 'images/topic_is_top_all.gif' %}">
+                        {% elif topic.is_top %}
+                            <img width="15px" src="{% static 'images/top_this.gif' %}">
+                        {% elif topic.is_locked %}
+                            <img width="15px" src="{% static 'images/topic_lock.gif' %}">
+                        {% elif topic.is_bottom %}
+                            <img width="15px" src="{% static 'images/topic_is_bottom.gif' %}">
+                        {% elif topic.is_poll %}
+                            <img src="{% static 'images/topic_poll.gif' %}">
+                        {% elif topic.post_time|is_new %}
+                            <img src="{% static 'images/topic_new.gif' %}">
+                        {% else %}
+                            <img src="{% static 'images/topic_not_new.gif' %}">
+                        {% endif %}
+                        {% if topic.subject_name %}
+                            [<a href="{% url 'forum_index' bbs.name forum.tag %}?subject={{ topic.subject_id }}"><span
+                                style="color: {{ topic.subject_color }};">{{ topic.subject_name }}</span></a>]
+                        {% endif %}
+                        <a href="{% url 'topic' bbs.name topic.id %}"><span style="color: {{ topic.title_color }};
+                                {% if topic.title_bold %}font-weight: bold;{% endif %}">{{ topic.title }}</span></a>
+                        {% if topic.read_level > 1 %}
+                            <span style="color: #777777">[阅读权限:{{ topic.read_level }}]</span>
+                        {% endif %}
+                        {% if topic.has_attachment %}
+                            <img width="15px" src="{% static 'images/attachment.gif' %}">
+                        {% endif %}
+                        {% if topic.is_digest %}
+                            <img src="{% static 'images/digest_small.gif' %}">
+                        {% endif %}
+                        {% if topic.has_img %}
+                            <img src="{% static 'images/image_s.gif' %}">
+                        {% endif %}
+                        {% with pages=topic.replies|get_topic_pages|length page_list=topic.replies|get_topic_pages %}
+                            {% if pages > 1 %}
+                                {% if pages < 7 %}
+                                    {% for page in page_list %}
+                                        <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for page in page_list|slice:"5" %}
+                                        <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                    {% endfor %}
+                                    ...
+                                    <a href="{% url 'topic_with_page' bbs.name topic.id pages %}">{{ pages }}</a>
+                                {% endif %}
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <div class="fit2l"><a
+                                href="{% url 'user_panel_name' topic.author_name %}">{{ topic.author_nickname }}</a>
+                        </div>
+                        <div title="{{ topic.post_time }}" class="fit2l">{{ topic.post_time|friendly_time }}</div>
+                    </td>
+                    <td>
+                        <div class="fit2l">{{ topic.replies }}</div>
+                        <div class="fit2l">{{ topic.all_hits }}</div>
+                    </td>
+                    <td>
+                        <div class="fit2l">
+                            <a href="{% url 'user_panel_name' topic.last_reply_name %}">{{ topic.last_reply_nickname }}</a>
+                        </div>
+                        <div title="{{ topic.post_time }}" class="fit2l">{{ topic.last_reply_time|friendly_time }}</div>
+                    </td>
+                </tr>
+            {% endfor %}
+            <!-- 帖子显示结束 -->
+        </table>
+    </div>
+    <!-- 发帖按钮和页面导航条开始 -->
+    <div>
+        <div class="fl"><a href="{% url 'forum_new_topic' bbs.name forum.tag %}">发帖</a></div>
+        {% if is_manager %}
+            <div class="fl"><input type="checkbox" id="mcbx2" class="manager_cbx"><label for="mcbx2">管理</label></div>
+        {% endif %}
+        <div class="fr">
+            {% with list=topics %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+        <hr style="color: #CDCDCD">
+    </div>
+    <!-- 发帖按钮和页面导航条结束 -->
+    <!-- 管理区域开始 -->
+    {% include 'common/manage_btns.html' %}
+    <!-- 管理区域结束 -->
+
+{% endblock main %}
+
+{% block script_at_page_end %}
+    <script>
+        function get_manage_selected_topics() {
+            var result = [];
+            $(".manager_cb").each(function () {
+                if ($(this).prop("checked"))
+                    result.push($(this).val());
+            });
+            return result;
+        }
+        function go_to(subject, digest, page, order_by, order) {
+            var get_str = "?";
+            var get_list = [];
+            if (subject != "")
+                get_list.push("subject=" + subject);
+            if (digest != "")
+                get_list.push("digest=1");
+            if (page != "")
+                get_list.push("page=" + page);
+            if (order_by != "") {
+                get_list.push("order_by=" + order_by);
+                if (order != "")
+                    get_list.push("order=" + order);
+            }
+            $.each(get_list, function (i, element) {
+                if (i > 0)
+                    get_str += "&";
+                get_str += element;
+            });
+            location.href = "{% url 'forum_index' bbs.name forum.tag %}" + get_str;
+        }
+        $(function () {
+            $(".manager_cbx").click(function () {
+                {#                显示或隐藏管理区域#}
+                var check = $(this).prop("checked");
+                var manager_area = $(".manager_area");
+                if (check) {
+                    manager_area.show()
+                }
+                else {
+                    manager_area.hide()
+                }
+            });
+            $(".subject_link").click(function () {
+                var subject = $(this).data("subject_id");
+                var digest = "";
+                var page = $("#get_page").val();
+                var order_by = $("#get_order_by").val();
+                var order = $("#get_order").val();
+                go_to(subject, digest, page, order_by, order);
+            });
+            $("#digest_link").click(function () {
+                var subject = "";
+                var digest = "1";
+                var page = $("#get_page").val();
+                var order_by = $("#get_order_by").val();
+                var order = $("#get_order").val();
+                go_to(subject, digest, page, order_by, order);
+            });
+            $(".order_link").click(function () {
+                var subject = $("#get_subject").val();
+                var digest = $("#get_digest").val();
+                var page = $("#get_page").val();
+                var order_by = $(this).data("order_by");
+                var last_order_by = $("#get_order_by").val();
+                var order = $("#get_order").val();
+                if (order_by == last_order_by) {
+                    if (order == "asc")
+                        order = "desc";
+                    else
+                        order = "asc";
+                }
+                else
+                    order = "desc";
+                go_to(subject, digest, page, order_by, order);
+            });
+            $(".manage_btn").click(function () {
+                var checked_topics_id_list = get_manage_selected_topics();
+                if (checked_topics_id_list.length == 0)
+                    return false;
+                var url = $(this).val();
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: {"id_list": JSON.stringify(checked_topics_id_list),"forum_id": "{{ forum.id }}" },
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.success)
+                            location.href = "{% url 'forum_index' bbs.name forum.tag %}";
+                        else
+                            alert(data.message);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                var subject = $("#get_subject").val();
+                var digest = $("#get_digest").val();
+                var order_by = $("#get_order_by").val();
+                var order = $("#get_order").val();
+                go_to(subject, digest, page, order_by, order);
+            });
+        })
+    </script>
+{% endblock %}

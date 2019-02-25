@@ -1,0 +1,147 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% load humanize %}
+{% block titlePrefix %}回复: {{ topic.title }} - {{ forum.name }}{% endblock titlePrefix %}
+{% block css_and_js %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+    <script src="{% static 'js/colpick.js' %}"></script>
+    <script src="{% static 'js/jquery.form.min.js' %}"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/colpick.css' %}"/>
+{% endblock css_and_js %}
+
+{% block main %}
+    {{ forum.name }}-{{ forum.tag }}
+    -{{ user.name }}
+    <hr>
+    <!-- 版块层级导航条开始 -->
+    <div>
+        <a href="{% url 'index' bbs.name %}">论坛首页</a>
+        {% for path in forum.path_lists %}
+            &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name path.tag %}">{{ path.name }}</a>
+        {% endfor %}
+        &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name forum.tag %}">{{ forum.name }}</a>
+    </div>
+    <!-- 版块层级导航条结束 -->
+    <!-- 发帖区域开始 -->
+    <div>
+        <form id="form_new_topic" action="
+            {% url 'forum_new_reply' bbs.name topic.id %}" method="post">
+                <div>
+                    <div class="fl">回复主题帖: {{ topic.title }}</div>
+                    <div class="fr"><button onclick="javascript:history.back();return false">返回</button></div>
+                    <div class="cb"></div>
+                </div>
+            <div>正文:</div>
+            {% if reply_to_id %}
+                <div>{{ prefix|safe }}</div>
+                <input name="prefix" type="hidden" value="{{ prefix }}">
+            {% endif %}
+            <div>{{ post_form.content.errors }}{{ post_form.content }}</div>
+            <!-- 附件显示区域开始 -->
+            <div id="show_attachment"></div>
+            <!-- 附件显示区域结束 -->
+            <div><input id="btn_submit" type="submit" value="保存"></div>
+            <input type="hidden" id="attachments_str" name="attachments">
+        </form>
+
+        <form id="form_upload_file" method="post">
+            <div>
+                {#添加#}
+                <label for="id_file_name">显示名称: </label>{{ attach_form.file_name }}
+                <label for="id_download_level">下载权限: </label>{{ attach_form.download_level|addattrs:"max=10000,style=width:60px" }}
+                <label for="id_file">文件: </label>{{ attach_form.file }}
+                <input id="btn_upload_file" type="submit" value="上传">
+            </div>
+        </form>
+    </div>
+    <!-- 发帖区域结束 -->
+
+{% endblock main %}
+
+{% block script_at_page_end %}
+    <script>
+        {#        轮询添加附件的div，将附件信息保存为json格式字符串#}
+        function get_attachments_string() {
+            var attach_div = $(".attachment_div");
+            var attachments = [];
+            if (attach_div.length > 0) {
+                attach_div.each(function () {
+                    var file_name = $(this).data("file_name");
+                    var file_path = $(this).data("file_path");
+                    var file_size = $(this).data("file_size");
+                    var download_level = $(this).data("download_level");
+                    var file_type = $(this).data("file_type");
+                    var storage_name = $(this).attr("id");
+                    var attachment = {
+                        "file_name": file_name,
+                        "download_level": download_level,
+                        "file_path": file_path,
+                        "storage_name": storage_name,
+                        "size": file_size,
+                        "type": file_type
+                    };
+                    attachments.push(attachment);
+                });
+            }
+            return JSON.stringify(attachments);
+        }
+        function check_upload_file() {
+            var file = $("#id_file").val();
+            var file_name = $("#id_file_name").val().trim();
+            if (file == "") {
+                alert("请选择需要上传的文件");
+                return false;
+            }
+            if (file_name == "") {
+                alert("请填写文件显示的名称");
+                return false;
+            }
+        }
+        function del_attach() {
+            var storage_name = $(this).attr("value");
+            $("#" + storage_name).remove();
+        }
+        $(function () {
+            $("#btn_submit").click(function () {
+                $("#attachments_str").val(get_attachments_string());
+                if ($("#id_title").val().trim() == "") {
+                    alert("标题不能为空");
+                    return false;
+                }
+            });
+            {#            异步提交上传文件form，添加附件div#}
+            $("#form_upload_file").ajaxForm({
+                dataType: "json",
+                url: "{% url 'upload_attachment' %}",
+                semantic: true,
+                beforeSubmit: check_upload_file,
+                success: function (data) {
+                    {#                    引用了json2.js，以支持IE6,7#}
+                    if (data.success) {
+                        {#                        将附件所有信息保存在div的data中，保存帖子的时候轮询class为attachment_div的div元素，取出数据post#}
+                        var file_name = data.data.file_name;
+                        var file_path = data.data.file_path;
+                        var file_size = data.data.size;
+                        var download_level = data.data.download_level;
+                        var storage_name = data.data.storage_name;
+                        var type = data.data.type;
+                        var area = $("#show_attachment");
+                        area.append('<div id="' + storage_name + '" class="attachment_div" data-file_name="'
+                        + file_name + '" data-file_path="' + file_path + '" data-file_size="' + file_size
+                        + '" data-download_level="' + download_level + '" data-file_type="' + type + '"><span>附件名称: '
+                        + file_name + '</span>&nbsp;&nbsp;<span>大小: ' + file_size + '字节</span>&nbsp;&nbsp;<span>阅读权限: '
+                        + download_level + '</span>&nbsp;&nbsp;<a id="del_' + storage_name + '" value="' + storage_name
+                        + '" href="javascript:void(0)">删除</a></div>');
+                        $("#del_" + storage_name).bind("click", del_attach);
+                    }
+                    else
+                        alert(data['message']);
+                }
+            });
+        });
+    </script>
+{% endblock script_at_page_end %}
+

@@ -1,0 +1,265 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% load humanize %}
+{% block titlePrefix %}发表新贴 - {{ forum.name }}{% endblock titlePrefix %}
+{% block css_and_js %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+    <script src="{% static 'js/colpick.js' %}"></script>
+    <script src="{% static 'js/jquery.form.min.js' %}"></script>
+    <script src="{% static 'js/jquery.datetimepicker.js' %}"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/colpick.css' %}"/>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/jquery.datetimepicker.css' %}"/>
+{% endblock css_and_js %}
+
+{% block main %}
+    {{ forum.name }}-{{ forum.tag }}
+    -{{ user.name }}
+    <hr>
+    <!-- 版块层级导航条开始 -->
+    <div>
+        <a href="{% url 'index' bbs.name %}">论坛首页</a>
+        {% for path in forum.path_lists %}
+            &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name path.tag %}">{{ path.name }}</a>
+        {% endfor %}
+        &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name forum.tag %}">{{ forum.name }}</a>
+    </div>
+    <!-- 版块层级导航条结束 -->
+    <!-- 发帖区域开始 -->
+    <div>
+        <form id="form_new_topic" action="{% url 'forum_new_topic' bbs.name forum.tag %}" method="post">
+            <div>{{ topic_form.title.errors }}
+                <label for="subject">主题: </label>
+                <select name="subject" id="subject">
+                    {% for subject in forum.subjects %}
+                        {% if subject.name == "" %}
+                            <option selected value="{{ subject.id }}" style="color: {{ subject.color }}">默认</option>
+                        {% else %}
+                            <option value="{{ subject.id }}"
+                                    style="color: {{ subject.color }}">{{ subject.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <label for="{{ topic_form.title.auto_id }}">{{ topic_form.title.label }}: </label>{{ topic_form.title|addattrs:"style=width:400px" }}
+                {% if is_manager %}
+                    {{ topic_form.title_bold|addattrs:"title=标题是否加粗" }}<label for="id_title_bold">加粗</label>&nbsp;&nbsp;
+                    <input id="id_title_color" maxlength=16 name="title_color" title="标题颜色" class="picker" readonly
+                           value="000000">
+                {% endif %}
+            </div>
+            <div><label
+                    for="{{ topic_form.is_poll.auto_id }}">{{ topic_form.is_poll.label }}: </label>{{ topic_form.is_poll }}
+            </div>
+            <div id="poll_area" style="display: none">
+                <div>
+                    {{ poll_form.descr.errors }}
+                    <label for="{{ poll_form.descr.auto_id }}">{{ poll_form.descr.label }}: </label>
+                    {{ poll_form.descr|addattrs:"style=width:300px" }}
+                    <span style="color: #777777;">投票一经发布无法修改！</span>
+                </div>
+                <div>
+                    <label for="add_poll_option">添加投票选项 </label><a id="add_poll_option" href="javascript:void(0)">
+                    + </a>
+                </div>
+
+                <div id="poll_option_area"></div>
+                <div>
+                    {{ poll_form.is_multi }}<label
+                        for="{{ poll_form.is_multi.auto_id }}">{{ poll_form.is_multi.label }}</label>
+                    {{ poll_form.is_visible }}<label
+                        for="{{ poll_form.is_visible.auto_id }}">{{ poll_form.is_visible.label }}</label>
+                    <label for="{{ poll_form.expiry.auto_id }}">{{ poll_form.expiry.label }}</label>
+                    {{ poll_form.expiry|addattrs:"readonly=readonly,style=width:120px,placeholder=默认一周" }}
+                    <span id="max_choices_area" style="display: none">
+                        <label for="{{ poll_form.max_choices.auto_id }}">{{ poll_form.max_choices.label }}</label>
+                        {{ poll_form.max_choices|addattrs:"min=1,value=1,style=width:30px" }}
+                    </span>
+                    <input type="hidden" id="poll_options_str" name="poll_options">
+                </div>
+            </div>
+            <div>正文:</div><div>{{ topic_form.content.errors }}{{ topic_form.content }}</div>
+            <!-- 附件显示区域开始 -->
+            <div id="show_attachment"></div>
+            <!-- 附件显示区域结束 -->
+            <div><input id="btn_submit" type="submit" value="发帖"></div>
+            <div>
+                <label for="{{ topic_form.is_hide.auto_id }}">{{ topic_form.is_hide.label }}: </label>{{ topic_form.is_hide }}
+                <label for="id_read_level">{{ topic_form.read_level.label }}: </label>
+                <input type="number" value="{{ forum.visit_level }}" id="id_read_level" name="read_level"
+                       min="{{ forum.visit_level }}" max="10000" style="width: 50px;">
+            </div>
+            <input type="hidden" id="attachments_str" name="attachments">
+        </form>
+
+        <form id="form_upload_file" method="post">
+            <div>
+                {#添加#}
+                <label for="id_file_name">显示名称: </label>{{ attach_form.file_name }}
+                <label for="id_download_level">下载权限: </label>{{ attach_form.download_level|addattrs:"max=10000,style=width:60px" }}
+                <label for="id_file">文件: </label>{{ attach_form.file }}
+                <input id="btn_upload_file" type="submit" value="上传">
+            </div>
+        </form>
+    </div>
+    <!-- 发帖区域结束 -->
+
+{% endblock main %}
+{% block script_at_page_end %}
+    <script>
+        {#    初始化投票选项序号，每添加一个选项加1#}
+        var poll_option_index = 1;
+        {#        轮询添加附件的div，将附件信息保存为json格式字符串#}
+        function get_attachments_string() {
+            var attach_div = $(".attachment_div");
+            var attachments = [];
+            if (attach_div.length > 0) {
+                attach_div.each(function () {
+                    var file_name = $(this).data("file_name");
+                    var file_path = $(this).data("file_path");
+                    var file_size = $(this).data("file_size");
+                    var download_level = $(this).data("download_level");
+                    var file_type = $(this).data("file_type");
+                    var storage_name = $(this).attr("id");
+                    var attachment = {
+                        "file_name": file_name,
+                        "download_level": download_level,
+                        "file_path": file_path,
+                        "storage_name": storage_name,
+                        "size": file_size,
+                        "type": file_type
+                    };
+                    attachments.push(attachment);
+                });
+            }
+            return JSON.stringify(attachments);
+        }
+        {#        轮询投票选项的div，将投票选项信息保存为array数组 #}
+        function get_poll_options_array() {
+            var options = $(".poll_option");
+            var options_array = [];
+            if (options.length > 0) {
+                options.each(function () {
+                    var s = $(this).val().trim().replace(";", "");
+                    if (s != "")
+                        options_array.push(s);
+                })
+            }
+            return options_array
+        }
+        function check_upload_file() {
+            var file = $("#id_file").val();
+            var file_name = $("#id_file_name").val().trim();
+            if (file == "") {
+                alert("请选择需要上传的文件");
+                return false;
+            }
+            if (file_name == "") {
+                alert("请填写文件显示的名称");
+                return false;
+            }
+        }
+        function del_attach() {
+            var storage_name = $(this).attr("value");
+            $("#" + storage_name).remove();
+        }
+{#        根据is_poll这个checkbox是否勾选判断是否显示投票区域#}
+        function check_and_slide_poll_area(){
+            var area = $("#poll_area");
+            var is_poll = $("#id_is_poll").prop("checked");
+            if (is_poll)
+                area.slideDown("fast");
+            else
+                area.slideUp("fast");
+        }
+        $(function () {
+            check_and_slide_poll_area();
+            {#            投票过期时间下拉选择框初始化#}
+            jQuery('#id_expiry').datetimepicker({
+                lang: 'zh',
+                format: 'Y-m-d H:i'
+            });
+            {#            选择是否是投票贴，显示或隐藏投票编辑区域#}
+            $("#id_is_poll").click(function () {
+                check_and_slide_poll_area();
+            });
+            $("#id_is_multi").click(function(){
+                var is_multi = $(this).prop("checked");
+                var max_choice_area = $("#max_choices_area");
+                if (is_multi){
+                    max_choice_area.fadeIn();
+                }
+                else{
+                    max_choice_area.fadeOut();
+                }
+            });
+            {#            点击添加链接，添加投票选项#}
+            $("#add_poll_option").click(function () {
+                var area = $("#poll_option_area");
+                area.append('<div>选项' + poll_option_index + ': <input class="poll_option" type="text"></div>');
+                $("#id_max_choices").val(poll_option_index);
+                poll_option_index++;
+            });
+            $("#btn_submit").click(function () {
+                $("#attachments_str").val(get_attachments_string());
+                var is_poll = $("#id_is_poll").prop("checked");
+                if (is_poll) {
+                    var options_array = get_poll_options_array();
+                    if (options_array.length < 2) {
+                        alert("投票选项数量至少为2个");
+                        return false;
+                    }
+                    $("#poll_options_str").val(JSON.stringify(options_array));
+                }
+                if ($("#id_title").val().trim() == "") {
+                    alert("标题不能为空");
+                    return false;
+                }
+
+            });
+            {#            异步提交上传文件form，添加附件div#}
+            $("#form_upload_file").ajaxForm({
+                dataType: "json",
+                url: "{% url 'upload_attachment' %}",
+                semantic: true,
+                beforeSubmit: check_upload_file,
+                success: function (data) {
+                    {#                    引用了json2.js，以支持IE6,7#}
+                    if (data.success) {
+                        {#                        将附件所有信息保存在div的data中，保存帖子的时候轮询class为attachment_div的div元素，取出数据post#}
+                        var file_name = data.data.file_name;
+                        var file_path = data.data.file_path;
+                        var file_size = data.data.size;
+                        var download_level = data.data.download_level;
+                        var storage_name = data.data.storage_name;
+                        var type = data.data.type;
+                        var area = $("#show_attachment");
+                        area.append('<div id="' + storage_name + '" class="attachment_div" data-file_name="'
+                        + file_name + '" data-file_path="' + file_path + '" data-file_size="' + file_size
+                        + '" data-download_level="' + download_level + '" data-file_type="' + type + '"><span>附件名称: '
+                        + file_name + '</span>&nbsp;&nbsp;<span>大小: ' + file_size + '字节</span>&nbsp;&nbsp;<span>阅读权限: '
+                        + download_level + '</span>&nbsp;&nbsp;<a id="del_' + storage_name + '" value="' + storage_name
+                        + '" href="javascript:void(0)">删除</a></div>');
+                        $("#del_" + storage_name).bind("click", del_attach);
+                    }
+                    else
+                        alert(data['message']);
+                }
+            });
+            $('.picker').colpick({
+                layout: 'hex',
+                submit: 0,
+                colorScheme: 'light',
+                onChange: function (hsb, hex, rgb, el, bySetColor) {
+                    $(el).css('border-color', '#' + hex);
+                    // Fill the text box just if the color was set using the picker, and not the colpickSetColor function.
+                    if (!bySetColor) $(el).val(hex);
+                }
+            }).keyup(function () {
+                $(this).colpickSetColor(this.value);
+            });
+        });
+    </script>
+{% endblock script_at_page_end %}
+

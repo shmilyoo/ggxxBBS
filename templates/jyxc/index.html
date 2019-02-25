@@ -1,0 +1,122 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load humanize %}
+
+{% block titlePrefix %}首页{% endblock titlePrefix %}
+
+{% block main %}
+    {% if user.is_authenticated %}
+        {{ user.name }}
+    {% else %}
+        not user
+    {% endif %}
+
+    <div>
+        {% include 'common/search_widget.html' %}
+    </div>
+    <div>
+        论坛名称：{{ name }} 欢迎 {{ user.name }}
+    </div>
+
+    {% for forum in forums %}
+        <div>
+            {% if forum.allow_topic %}
+                <div style="border: 1px black solid;padding: 10px;margin: 10px">
+                    <table style="width: 100%">
+                        <tr>
+                            <td style="width:50px"><img height="50" width="50" src="
+                                {% if forum.icon %}
+                                    {{ config.media_url }}{{ child.icon }}
+                                {% else %}
+                                    {{ config.default_forum_icon_path }}
+                                {% endif %}
+                            "></td>
+                            <td>
+                                <div>
+                                    <a href="{% url 'forum_index' bbs.name forum.tag %}">{{ forum.name }}</a>
+                                    <span style="color: #F26C4F;">({{ forum.today_posts }})</span>
+                                </div>
+                                <div>{{ forum.descr }}&nbsp;</div>
+                                {% if forum.children %}
+                                    <div>
+                                        子版块:
+                                        {% for child in forum.children %}
+                                            <a href="{% url 'forum_index' bbs.name child.tag %}">{{ child.name }}</a>
+                                        {% endfor %}
+                                        &nbsp;
+                                    </div>
+                                {% endif %}
+                                <div>{% if forum.moderators_list %}版主:
+                                    {% for m in forum.moderators_list %}
+                                        <a href="{% url 'user_panel_name' m.name %}"
+                                           target="_blank">{{ m.nick_name }}</a>
+                                        {% if not forloop.last %},{% endif %}
+                                    {% endfor %}
+                                {% endif %}&nbsp;
+                                </div>
+                            </td>
+                            <td style="width:80px">{{ forum.topics }}/{{ forum.posts }}</td>
+                            <td style="width:300px">
+                                {% if forum.last_topic_title %}
+                                    <div>
+                                        <a href="{% url 'topic' bbs.name forum.last_topic_id %}">{{ forum.last_topic_title }}</a>
+                                    </div>
+                                    <div>
+                                        {{ forum.update_time|naturaltime }}&nbsp;
+                                        <a href="{% url 'user_panel_name' forum.last_username %}">{{ forum.last_nickname }}</a>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            {% else %}
+                <div style="border: 1px black solid;padding: 10px;margin: 10px">
+                    <div style="background-color: #8dbbfd">
+                        {{ forum.name }}
+                    </div>
+                    <table style="width: 100%">
+                        {% for child in forum.children %}
+                            <tr>
+                                <td style="width:50px"><img height="50" width="50" src="
+                                {% if child.icon %}
+                                    {{ config.media_url }}{{ child.icon }}
+                                {% else %}
+                                    {{ config.default_forum_icon_path }}
+                                {% endif %}
+                            "></td>
+                                <td>
+                                    <div>
+                                        <a href="{% url 'forum_index' bbs.name child.tag %}">{{ child.name }}</a>
+                                        <span style="color: #F26C4F;">({{ child.today_posts }})</span>
+                                    </div>
+                                    <div>{{ child.descr }}&nbsp;</div>
+                                    <div>{% if child.moderators_list %}版主:
+                                        {% for m in child.moderators_list %}
+                                            <a href="{% url 'user_panel_name' m.name %}"
+                                               target="_blank">{{ m.nick_name }}</a>
+                                            {% if not forloop.last %},{% endif %}
+                                        {% endfor %}
+                                    {% endif %}&nbsp;
+                                    </div>
+                                </td>
+                                <td style="width:80px">{{ child.topics }}/{{ child.posts }}</td>
+                                <td style="width:300px">
+                                    {% if child.last_topic_title %}
+                                        <div>
+                                            <a href="{% url 'topic' bbs.name child.last_topic_id %}">{{ child.last_topic_title }}</a>
+                                        </div>
+                                        <div>
+                                            {{ child.update_time|naturaltime }}&nbsp;
+                                            <a href="{% url 'user_panel_name' child.last_username %}">{{ child.last_nickname }}</a>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+{% endblock main %}

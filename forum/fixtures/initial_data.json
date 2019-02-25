@@ -1,0 +1,58 @@
+[
+  {
+    "model": "account.UserGroup",
+    "pk": "10000000000000000000000000000001",
+    "fields": {
+      "name": "初来乍到",
+      "need_credits": "0",
+      "icon": "images/user_group_icons/default/01.gif",
+      "read_level": 1
+    }
+  },
+  {
+    "model": "account.UserGroup",
+    "pk": "10000000000000000000000000000002",
+    "fields": {
+      "name": "版主",
+      "need_credits": "1147483647",
+      "icon": "images/user_group_icons/default/moderator.gif",
+      "read_level": 9999
+    }
+  },
+  {
+    "model": "account.UserGroup",
+    "pk": "10000000000000000000000000000003",
+    "fields": {
+      "name": "管理员",
+      "need_credits": "2147483640",
+      "icon": "images/user_group_icons/default/admin.gif",
+      "read_level": 19999,
+      "can_ip": true
+    }
+  },
+  {
+    "model": "account.UserGroup",
+    "pk": "10000000000000000000000000000004",
+    "fields": {
+      "name": "VIP",
+      "need_credits": "1047483647",
+      "icon": "images/user_group_icons/default/vip.gif",
+      "read_level": 9000,
+      "can_ip": true
+    }
+  },
+  {
+    "model": "account.MyUser",
+    "pk": "10000000000000000000000000000004",
+    "fields": {
+      "name": "admin",
+      "nick_name": "admin",
+      "password": "pbkdf2_sha256$15000$eIR05XX0roog$l4oCc43mvLt2T0a9hq+BSpX5K2L0DY0nl9tPIKahP8w=",
+      "is_admin": true,
+      "reg_ip": "127.0.0.1",
+      "reg_time": "2000-05-14",
+      "last_visit": "2000-05-14",
+      "user_group": "10000000000000000000000000000003"
+    }
+  }
+]

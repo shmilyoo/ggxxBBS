@@ -1,0 +1,56 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>{% block title %}公共信息网论坛系统{% endblock %}</title>
+    <link href="{% static 'css/default.css' %}" type="text/css" rel="stylesheet" />
+    <script src="{% static 'js/jquery-1.11.2.min.js' %}"></script>
+    {% block css_and_js %}{% endblock %}
+</head>
+<body>
+<div>
+    {% block top %}
+    {# logo  banner  user login info #}
+    {% if user.is_authenticated %}
+        {{ user.name }}
+    <a href="{% url 'logout' %}?from={{ name }}">注销</a>
+    {% else %}
+        <div>
+        <form action="" method="post">
+            <div><label for="name">帐号</label><input id="name" name="name" type="text"/></div>
+            <div><label for="password">密码</label><input id="password" name="name" type="password"/></div>
+            <input type="checkbox" name="remember" id="remember"/><label for="remember">记住我</label>
+            <input type="submit" value="登录"/>
+        </form>
+        </div>
+    <a href="{% url 'reg' %}">注册</a>
+    {% endif %}
+    {% endblock top %}
+</div>
+
+<div>
+    {% block menu %}
+    {% endblock menu %}
+</div>
+
+<div>
+    {% block announcement %}
+    {% endblock announcement %}
+</div>
+
+<div>
+    {% block main %}
+    {% endblock main %}
+</div>
+
+<div>
+    {% block footer %}
+        <hr>
+        制作，版权等信息
+    {% endblock footer %}
+</div>
+
+</body>
+{% block script_at_page_end %}{% endblock script_at_page_end %}
+</html>

@@ -1,0 +1,60 @@
+{% extends 'account/inform_base.html' %}
+{% load staticfiles %}
+{% block titlePrefix %}发送消息{% endblock %}
+{% block css_and_js %}
+    <script src="{% static 'js/jquery.form.min.js' %}"></script>
+{% endblock %}
+{% block inform_content %}
+    <form action="" method="post" id="send_message_form">
+        <table>
+            <tr>
+                <td style="width:100px">收件人:</td>
+                <td>
+                    <input id="to_user" name="to_user" type="text" placeholder="多个收件人用 ; 隔开"
+                           value="{% if to_user %}{{ to_user.name }}{% endif %}">
+                    <input id="type_name" type="radio" checked name="name_type" value="name"><label for="type_name">用户名</label>
+                    <input id="type_nick_name" type="radio" name="name_type" value="nick_name"><label
+                        for="type_nick_name">用户昵称</label>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;padding-top:10px"><label for="message">内&nbsp;&nbsp;容:</label></td>
+                <td style="padding-top: 10px"><textarea rows="5" name="message" id="message"></textarea></td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="submit" value="发送"></td>
+            </tr>
+        </table>
+    </form>
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        $(function () {
+            $("#send_message_form").ajaxForm({
+                dataType: 'json',
+                semantic: true,
+                beforeSubmit: function () {
+                    if ($("#to_user").val().trim() == "") {
+                        alert("收件人不能为空");
+                        return false;
+                    }
+                    if ($("#message").val().trim() == "") {
+                        alert("消息内容不能为空");
+                        return false;
+                    }
+                },
+                success: function (data) {
+                    if (data.success) {
+                        alert("发送成功");
+                        $("#to_user").val("");
+                        $("#message").val("");
+                    }
+                    else
+                        alert(data["message"]);
+                }
+            });
+        })
+    </script>
+{% endblock %}

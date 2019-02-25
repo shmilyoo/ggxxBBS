@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+{{ error.message }}
+<div>
+    您可以返回 <a href="javascript:history.back()">上一页</a>
+    {% for bbs in config.bbs_names.values %}
+    | <a href="{% url 'index' bbs.name %}">{{ bbs.cnName }}</a>
+    {% endfor %}
+    | <a href="{% url 'choose_bbs' %}">论坛系统首页</a>
+</div>
+</body>
+</html>

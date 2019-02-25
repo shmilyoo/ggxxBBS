@@ -1,0 +1,41 @@
+# coding=utf-8
+from django.conf.urls import patterns, url
+
+urlpatterns = patterns('',
+                       url(r'^$', 'forum.my_admin.index', name='admin_index'),
+                       url(r'^forum/moderator/(?P<forum_id>\w+)/$', 'forum.my_admin.edit_forum_moderator',
+                           name='admin_edit_forum_moderator'),
+                       url(r'^forum/add/$', 'forum.my_admin.add_forum', name='admin_add_forum'),
+                       url(r'^forum/edit/(?P<forum_id>\w+)/$', 'forum.my_admin.edit_forum', name='admin_edit_forum'),
+                       url(r'^forum/manage/$', 'forum.my_admin.manage_forum', name='admin_manage_forum'),
+                       url(r'^forum/manage/(?P<bbs_id>\w+)/$', 'forum.my_admin.manage_forum',
+                           name='admin_manage_forum_id'),  # 加上bbs的id，使页面tab显示这个bbs
+                       url(r'^forum/seq/$', 'forum.my_admin.seq_forum', name='admin_seq_forum'),
+                       url(r'^forum/get_from_bbs/$', 'forum.my_admin.get_forums_from_bbs',
+                           name='admin_get_forums_from_bbs'),
+                       url(r'^forum/get_zTree_json/$', 'forum.my_admin.get_forum_ztree_json',
+                           name='get_forums_zTree_json'),
+                       url(r'^user/manage/$', 'forum.my_admin.user_manage_filter', name='admin_user_manage'),
+                       url(r'^user/manage/(?P<num>\d+)/(?P<field>\w+)/(?P<order>(asc|desc))/$',
+                           'forum.my_admin.user_manage_filter', name='admin_user_manage_filter'),
+                       url(r'^user/set_active/$', 'forum.my_admin.user_active', name='admin_user_active'),
+                       url(r'^user/set_admin/$', 'forum.my_admin.user_admin', name='admin_user_admin'),
+                       url(r'^user_groups/$', 'forum.my_admin.user_groups', name='admin_user_groups'),
+                       url(r'^user_groups/delete/$', 'forum.my_admin.del_user_groups', name='admin_del_user_groups'),
+                       url(r'^user_groups/add/$', 'forum.my_admin.add_user_groups', name='admin_add_user_groups'),
+                       url(r'^user_groups/edit/$', 'forum.my_admin.edit_user_groups', name='admin_edit_user_groups'),
+                       url(r'^announcements/$', 'forum.my_admin.announcements', name='admin_announcements'),
+                       url(r'^announcements/add/$', 'forum.my_admin.add_announcements', name='admin_add_announcements'),
+                       url(r'^announcements/edit/$', 'forum.my_admin.edit_announcements',
+                           name='admin_edit_announcements'),
+                       url(r'^announcements/del/$', 'forum.my_admin.del_announcements', name='admin_del_announcements'),
+                       url(r'^subject/del/$', 'forum.my_admin.subject_del', name='admin_subject_del'),
+                       url(r'^subject/add/$', 'forum.my_admin.subject_modify', name='admin_subject_modify'),
+                       # url(r'^subject/edit/$', 'forum.my_admin.subject_edit', name='admin_subject_edit'),
+                       url(r'^subject/list/$', 'forum.my_admin.subject_list', name='admin_subject_list'),
+                       url(r'^topic/manage/$', 'forum.my_admin.topic_manage', name='admin_topic_manage'),
+                       url(r'^topic/batch_del/$', 'forum.my_admin.topic_batch_del', name='admin_topic_batch_del'),
+                       url(r'^topic/transfer/$', 'forum.my_admin.topic_transfer', name='admin_topic_transfer'),
+
+
+)

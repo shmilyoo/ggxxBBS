@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="utf-8">
+    <title></title>
+</head>
+<body>
+<div>用户注册</div>
+
+<form method="post" action="">
+{#    {% if form.errors %}#}
+{#        <div>信息提交错误：#}
+{#            {% for name,errors in form.errors.items %}#}
+{#                <ul>{{ name }}#}
+{#                    {% for e in errors %}#}
+{#                        <li>{{ e }}</li>#}
+{#                    {% endfor %}#}
+{#                </ul>#}
+{#            {% endfor %}#}
+{#        </div>#}
+{#    {% endif %}#}
+
+    <div>
+        <div>{{ form.name.errors }}<label for="{{ form.name.auto_id }}">{{ form.name.label }}:</label>{{ form.name }}</div>
+        <div>{{ form.password.errors }}<label for="{{ form.password.auto_id }}">密码:</label>{{ form.password }}</div>
+        <div>{{ form.password2.errors }}<label for="{{ form.password2.auto_id }}">{{ form.password2.label }}:</label>{{ form.password2 }}</div>
+        <div>{{ form.gender.errors }}<label for="{{ form.gender.auto_id }}">{{ form.gender.label }}:</label>{{ form.gender }}</div>
+    </div>
+
+    <div>
+        <input id="submit" name="submit" type="submit" value="注册">
+        <a href="{% url 'login' %}">登录</a>
+    </div>
+</form>
+{#    {% if form.errors %}#}
+{#        <script>#}
+{#        var eee = ''#}
+{#        eee = '{{ errorstr }}'#}
+{#        alert(eee)#}
+{#        </script>#}
+{#    {% endif %}#}
+</body>
+</html>

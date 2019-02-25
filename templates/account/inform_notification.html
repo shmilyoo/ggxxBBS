@@ -1,0 +1,177 @@
+{% extends 'account/inform_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}系统通知{% endblock %}
+{% block jquery %}
+    {#jquery 1.11 与 simplemodal 1.4.4冲突，改为jquery 1.9.0版本#}
+    <script src="{% static 'js/jquery-1.9.0.js' %}"></script>
+{% endblock %}
+{% block css_and_js %}
+    <script src="{% static 'js/jquery.simplemodal.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+{% endblock %}
+
+{% block inform_content %}
+    <div>
+        {% for notice in notice_list %}
+            <div id="{{ notice.id }}_div"
+                    {% if not forloop.last %} class="bbd"{% endif %}
+                    {% if not notice.has_read %} style="font-weight: bold"{% endif %}
+                    >
+                <table>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="{{ notice.id }}" class="notice_checkbox">
+                        </td>
+                        <td colspan="2">
+                                <span id="{{ notice.id }}_from">
+                            系统通知
+                            {{ notice.time|str_datetime }}</span>
+                                <a href="javascript:void(0)" class="show_modal" data-id="{{ notice.id }}">查看</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        </td>
+                        <td width="50px" style="vertical-align: top">
+                            <div>内容:</div>
+                            <div></div>
+                        </td>
+                        <td>
+                            {{ notice.content|safe|truncatechars:100 }}
+                            <div id="{{ notice.id }}_content" style="display: none">{{ notice.content|safe }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% empty %}
+            当前没有相应的系统通知
+        {% endfor %}
+    </div>
+    {% if notice_list %}
+        <div class="fr">
+            {% with list=notice_list %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+        <div>
+            <button id="select_all_btn">全选/反选</button>
+            <button id="set_read_btn">标记为已读</button>
+            <button id="del_notice_btn">删除</button>
+        </div>
+    {% endif %}
+
+    {#    模态窗口开始#}
+    <div id="modal_window" style="display: none;">
+        <div class="m5tb">系统通知</div>
+        <div id="notice_div" class="m5tb"></div>
+        <div class="m5tb fr">
+            <button class="simplemodal-close">关闭</button>
+        </div>
+        <div class="cb"></div>
+    </div>
+    {#    模态窗口结束#}
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        function get_checked_list() {
+            var list = [];
+            $(".notice_checkbox").each(function () {
+                if ($(this).prop("checked"))
+                    list.push($(this).val())
+            });
+            return list;
+        }
+        function set_div_read(id) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'set_notice_read' %}",
+                data: {"id": id},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        var div = $("#" + id + "_div");
+                        div.css("font-weight", "normal");
+                        refresh_inform_tip_by_list(data.count)
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        function set_div_bulk_read(id_list) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'set_notice_bulk_read' %}",
+                data: {"id_list": JSON.stringify(id_list)},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        $.each(id_list, function (i, element) {
+                            $("#" + element + "_div").css("font-weight", "normal");
+                        });
+                        refresh_inform_tip_by_list(data.count)
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        function bulk_del_notice(id_list) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'bulk_del_notice' %}",
+                data: {"id_list": JSON.stringify(id_list)},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        location.href = "{% url 'uc_inform' 'notice' %}";
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        $(function () {
+            $(".show_modal").click(function () {
+                var notice_id = $(this).data("id");
+                $("#notice_div").html($("#" + notice_id + "_content").html());
+                $("#modal_window").modal();
+                $(".simplemodal-container").css("height",$("#modal_window").height() + 20);
+                set_div_read(notice_id);
+            });
+            $("#set_read_btn").click(function () {
+                var id_list = get_checked_list();
+                if (id_list.length != 0)
+                    set_div_bulk_read(id_list);
+            });
+            $("#select_all_btn").click(function () {
+                var check_class = $(".notice_checkbox");
+                if ($(".notice_checkbox:checked").length == check_class.length)
+                    check_class.prop("checked", "");
+                else
+                    check_class.prop("checked", "checked");
+            });
+            $("#del_notice_btn").click(function () {
+                var id_list = get_checked_list();
+                if (id_list.length != 0)
+                    bulk_del_notice(id_list);
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                location.href = "?page=" + page;
+            });
+        })
+    </script>
+{% endblock %}

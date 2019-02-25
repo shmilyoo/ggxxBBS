@@ -1,0 +1,528 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load humanize %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}{{ topic.title }}{% endblock titlePrefix %}
+{% block css_and_js %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+{% endblock %}
+{% block main %}
+
+    {{ forum.name }}-{{ forum.tag }}
+    -{{ user.name }}
+    <hr>
+    <!-- 版块层级导航条开始 -->
+    <div>
+        <a href="{% url 'index' bbs.name %}">论坛首页</a>
+        {% for path in forum.path_lists %}
+            &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name path.tag %}">{{ path.name }}</a>
+        {% endfor %}
+        &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name forum.tag %}">{{ forum.name }}</a>
+        &nbsp;>&nbsp;{{ topic.title }}
+    </div>
+    <!-- 版块层级导航条结束 -->
+    <!-- 发帖及page导航开始 -->
+    <div class="ptb10">
+        <div class="fl"><a href="{% url 'forum_new_topic' bbs.name forum.tag %}">发帖</a></div>
+        <div class="fl"><a href="{% url 'forum_new_reply' bbs.name topic.id %}">回复</a></div>
+        <div class="fr">
+            {% with list=all %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+    </div>
+    <!-- 发帖及page导航结束 -->
+    <!-- 管理区域开始 -->
+    {% include 'common/manage_btns.html' %}
+    <!-- 管理区域结束 -->
+    <a name="top"></a>
+    <!-- 帖子开始 -->
+    <div style="border:1px solid #CDCDCD" class="post_list">
+        {#                显示主题帖抬头、标题等#}
+        <table>
+            <tr>
+                <td class="topic_left">
+                    <div style="text-align: center;">查看:{{ topic.all_hits }} | 回复: {{ topic.reply_num }}</div>
+                </td>
+                <td class="topic_right">
+                    <div style="font-size: 20px;{% if topic.title_bold %}font-weight: bold;{% endif %}">
+                        {% if topic.subject_name %}
+                            <a href="{% url 'forum_index' bbs.name forum.tag %}?subject={{ topic.subject_id }}">
+                                [<span style="color: {{ topic.subject_color }}">{{ topic.subject_name }}</span>]
+                            </a>
+                        {% endif %}
+                        <span style="color: {{ topic.title_color }};
+                                {% if topic.title_bold %}font-weight: bold;{% endif %}">
+                            {{ topic.title }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        {% for tp in all %}
+            <div><a name="{{ tp.id }}"></a> {# 锚点，根据回复贴链接到此  #}
+                <table>
+                    <tr>
+                        {#                    左侧用户信息#}
+                        <td class="topic_left" rowspan="2">
+                            <div style="height:20px;border-bottom:1px dashed #CDCDCD;text-align: center;margin-bottom: 10px;
+                            padding:5px 0">
+                                {#                                用户名区域#}
+                                <a title="{{ tp.u_name }}" href="{% url 'uc_info' 'summary' %}?name={{ tp.u_name }}">
+                                    {{ tp.u_nickname }}</a>
+                                {{ tp.u_gender|get_sex_img_html|safe }}
+                                {#                                <img height="15" src="{{ tp.u_gender|get_sex_image_url }}">#}
+                            </div>
+                            <div>
+                                {#                                用户头像区域#}
+                                <a href="">
+                                    <img src="{{ tp.u_avatar|default:config.default_avatar_path }}" width="120px">
+                                </a>
+                            </div>
+                            <div>
+                                {{ tp.u_bio }}
+                            </div>
+                            <div>
+                                {#                                主题数、回复数、积分区域#}
+                                <table>
+                                    <tr>
+                                        <td style="border-right: 1px solid #CCC;text-align: center;">
+                                            <div><a href="#">{{ tp.t_num }}</a></div>
+                                            <div>主题</div>
+                                        </td>
+                                        <td style="border-right: 1px solid #CCC;text-align: center;">
+                                            <div><a href="#">{{ tp.p_num }}</a></div>
+                                            <div>回帖</div>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <div><a href="#">{{ tp.u_credits }}</a></div>
+                                            <div>积分</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div>
+                                {#                                用户组，图标#}
+                                <div>
+                                    用户组: <a href="#{{ tp.ug_id }}">{{ tp.ug_name }}</a>
+                                </div>
+                                <div>
+                                    <img src="{% static tp.ug_icon %}" height="20px">
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{% url 'uc_inform' 'send_message' %}?to={{ tp.u_name }}">
+                                    <img src="{% static 'images/message.gif' %}">发消息</a>
+                            </div>
+                        </td>
+                        {#                    右侧帖子信息，上半部-正文等#}
+                        <td class="topic_right">
+                            <div>
+                                <div style="height:20px;border-bottom:1px dashed #CDCDCD;margin-bottom: 10px;
+                            padding:5px 0">
+                                    <div style="float:right;margin-right: 30px;">
+                                        {#                                        替换楼主 沙发 板凳，根据页数和每页显示数量计算楼数#}
+                                        {{ forloop.counter|get_floor_string:page }}
+                                        <b><a href="#top">↑</a>
+                                            <a href="#bottom">↓</a></b>
+                                    </div>
+                                    <div>
+                                        发表于: {{ tp.post_time|str_datetime }}
+                                        <span style="color: #CCC;">|</span>
+                                        {% if only_see == tp.u_name %}
+                                            <a href="{% url 'topic' bbs.name topic.id %}">查看全部</a>
+                                        {% else %}
+                                            <a href="{% url 'topic' bbs.name topic.id %}?author={{ tp.u_name }}">只看该作者</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div> {# 帖子正文显示区域 #}
+                                    {% if tp.remark %}
+                                        <div style="text-align: center;color:#999">{{ tp.remark }}</div>
+                                    {% endif %}
+                                    <div>
+                                        {% if tp.is_topic %}
+                                            {% if tp.is_hide and not is_manager and not user|has_replied:tp %}
+                                                {# 是主题帖and回复可见and没有回帖and没有管理权限 #}
+                                                <div>帖子需要<a href="{% url 'forum_new_reply' bbs.name tp.id %}">回复</a>才能浏览
+                                                </div>
+                                            {% else %}
+                                                {% if tp.is_poll %}
+                                                    <div id="poll_area"
+                                                         style="border-bottom: 1px dashed #999;padding-bottom: 10px">
+                                                        <div>{{ tp.poll.descr }}</div>
+                                                        <div>
+                                                            {% if tp.poll.is_multi %}
+                                                                多选(最多选{{ tp.poll.max_choices }}项)
+                                                            {% else %}
+                                                                单选
+                                                            {% endif %}
+                                                            ,过期时间{{ tp.poll.expiry }}
+                                                        </div>
+                                                        <div>
+                                                            <table>
+                                                                <tr>
+                                                                    <td>
+                                                                        <table>
+                                                                            {% for option in tp.poll.options %}
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        {{ forloop.counter }}: {{ option.option }}
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        {% if tp.poll.is_multi %}
+                                                                                            <input class="poll_option"
+                                                                                                   type="checkbox"
+                                                                                                   value="{{ option.id }}">
+                                                                                        {% else %}
+                                                                                            <input type="radio"
+                                                                                                   class="poll_option"
+                                                                                                   name="poll_option"
+                                                                                                   value="{{ option.id }}">
+                                                                                        {% endif %}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            {% endfor %}
+                                                                        </table>
+                                                                    </td>
+                                                                    <td>
+                                                                        {# 显示投票结果 #}
+                                                                        {% if not tp.poll.is_visible or tp.poll.is_expired or is_manager or tp.poll|has_voted:user %}
+                                                                            <table style="width: 350px;">
+                                                                                {% for option in tp.poll.options %}
+                                                                                    <tr>
+                                                                                        <td style="width:150px;text-align: left">{{ option.votes }}票({% widthratio option.votes tp.poll.voters_num 100 %}%)</td>
+                                                                                        <td width="{{ config.poll_option_max_length }}px">
+                                                                                            <div style="background-color: {{ config.colors|random }};height:15px;width:{% widthratio option.votes tp.poll.voters_num config.poll_option_max_length %}px">
+                                                                                                &nbsp;</div>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                {% endfor %}
+                                                                            </table>
+                                                                        {% else %}
+                                                                            投票后显示结果
+                                                                        {% endif %}
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </div>
+                                                        <div>
+                                                            <button id="poll_btn" value="{{ tp.poll.id }}">投票</button>
+                                                            已有{{ tp.poll.get_voters_num }}人投票
+                                                            &nbsp;&nbsp;&nbsp;
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                                <div style="padding: 10px 0;min-height: 100px;
+                                                        {% if tp.is_digest %}
+                                                            background: url('{% static "images/digest_large.gif" %}') no-repeat 35% 0;
+                                                        {% endif %}
+                                                        ">{{ tp.content|safe }}</div>
+                                                {% if tp.has_attachment %}
+                                                    <div>
+                                                        <ul style="padding-left: 0">附件:
+                                                            {% for attach in tp.attachments %}
+                                                                <li style="list-style: none">
+                                                                    <a href="{% url 'attach_download' attach.id %}">
+                                                                        <img src="{% static 'images' %}/{{ attach.file_type }}.gif"
+                                                                             width="30px">
+                                                                        {{ attach.file_name }} - {{ attach.downloads }}次
+                                                                        - {{ attach.file_size|filesizeformat }}
+                                                                        - 下载权限:{{ attach.download_level }}点
+                                                                        {% if attach.user_id != tp.author_id %}
+                                                                            <span style="color: #777777"> - 由 {{ attach.user.nick_name }}上传</span>
+                                                                        {% endif %}
+                                                                    </a>
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            {#                                            回复贴#}
+                                            {% if tp.prefix %}
+                                                {{ tp.prefix|safe }}
+                                            {% endif %}
+                                            <div style="padding: 10px 0">{{ tp.content|safe }}</div>
+                                            {% if tp.has_attachment %}
+                                                <div class="post_attach_div" data-id="{{ tp.id }}">
+                                                    <span style="background-color: #bbb">
+                                                        显示附件
+                                                    </span></div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="100%" class="topic_right">
+                            {% if tp.u_signature %}
+                                <div class="signature">
+                                    {{ tp.u_signature|safe }}
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="topic_left"></td>
+                        <td class="topic_right">
+                            <div>
+                                <span style="float:right;margin-right: 30px;">
+                                    <a href="{% url 'forum_new_reply' bbs.name topic.id %}?topic={{ tp.is_topic }}&id={{ tp.id }}&type=refer">引用</a>&nbsp;&nbsp;
+                                    <a href="{% url 'forum_new_reply' bbs.name topic.id %}?topic={{ tp.is_topic }}&id={{ tp.id }}&type=post">回复</a>&nbsp;&nbsp;
+                                    {% if is_manager or user.name == tp.u_name %}
+                                        {% if tp.is_topic %}
+                                            <a href="{% url 'forum_edit_tp' bbs.name tp.id 't' %}">编辑</a>&nbsp;&nbsp;
+                                        {% else %}
+                                            <a href="{% url 'forum_edit_tp' bbs.name tp.id 'p' %}">编辑</a>&nbsp;&nbsp;
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if is_manager %}
+                                        <a href="{{ tp.id }}">删除</a>&nbsp;&nbsp;
+                                    {% endif %}
+                                </span>
+                                <img src="{% static 'images/support.gif' %}">
+                                <a href="javascript:void(0)" class="vote_btn" data-type="support"
+                                   data-is_topic="{{ tp.is_topic }}"
+                                   data-id="{{ tp.id }}"> 支持{{ tp.support|default:"" }}</a>&nbsp;&nbsp;
+                                <img src="{% static 'images/against.gif' %}">
+                                <a href="javascript:void(0)" class="vote_btn" data-type="against"
+                                   data-is_topic="{{ tp.is_topic }}"
+                                   data-id="{{ tp.id }}"> 反对{{ tp.against|default:"" }}</a>&nbsp;&nbsp;
+                                {% if tp.is_topic %}
+                                    <a href="javascript:void(0)" id="favorite_btn" data-fav="0" data-id="{{ tp.id }}">
+                                        <img id="favorite_img" src="{% static 'images/hollow_star.gif' %}">
+                                        <img id="favorited_img" style="display: none"
+                                             src="{% static 'images/star.gif' %}">
+                                        <label id="fav_text" style="cursor: pointer;">收藏</label></a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+    <!-- 帖子结束 -->
+    <div class="ptb10">
+        <div class="fl"><a href="{% url 'forum_new_topic' bbs.name forum.tag %}">发帖</a></div>
+        <div class="fl"><a href="{% url 'forum_new_reply' bbs.name topic.id %}">回复</a></div>
+        <div class="fr">
+            {% with list=all %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+    </div>
+    <!-- 快速回帖区域开始 -->
+    <a name="bottom"></a>
+    {% if not topic.is_locked and user.is_authenticated %}
+        <div style="margin: 20px 0">
+            <form action="" method="post">
+                <table>
+                    <tr>
+                        <td class="topic_left">
+                            <div>
+                                <a href="">
+                                    <img src="{{ user.get_avatar }}" width="120px">
+                                </a>
+                            </div>
+                        </td>
+                        <td class="topic_right">
+                            <div>{{ post_form.content.errors }}{{ post_form.content }}</div>
+                            <div>
+                                <button id="fast_reply_btn">回复</button>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    {% endif %}
+    <!-- 快速回帖区域结束 -->
+
+    <!-- 管理区域开始 -->
+    {% include 'common/manage_btns.html' %}
+    <!-- 管理区域结束 -->
+
+{% endblock main %}
+
+{% block script_at_page_end %}
+    <script>
+        function set_not_favorite() {
+            var fav_img = $("#favorite_img");
+            var faved_img = $("#favorited_img");
+            $("#favorite_btn").data("fav", "0");
+            $("#fav_text").html("收藏");
+            fav_img.show();
+            faved_img.hide();
+        }
+        function set_has_favorite() {
+            var fav_img = $("#favorite_img");
+            var faved_img = $("#favorited_img");
+            $("#favorite_btn").data("fav", "1");
+            $("#fav_text").html("已收藏");
+            fav_img.hide();
+            faved_img.show();
+        }
+        function check_favorite_state() {
+            if ("{{ page }}" != "1")
+                return false;
+            $.ajax({
+                type: "POST",
+                url: "{% url 'get_favorite_state' %}",
+                data: {"topic_id": "{{ topic.id }}"},
+                dataType: "json",
+                success: function (data) {
+                    if (data.has_fav)
+                        set_has_favorite();
+                    else
+                        set_not_favorite();
+                },
+                error: function () {
+                    alert("查询收藏状态失败");
+                }
+            });
+        }
+        $(function () {
+            $(".manager_area").show();
+            check_favorite_state();
+            $("#favorite_btn").click(function () {
+                var topic_id = $(this).data("id");
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'change_favorite' %}",
+                    data: {"topic_id": topic_id},
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.success)
+                            if (data.has_fav)
+                                set_has_favorite();
+                            else
+                                set_not_favorite();
+                        else
+                            alert(data.message);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $(".post_attach_div").click(function () {
+                var post_id = $(this).data("id");
+                var div = $(this);
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'get_post_attachment' %}",
+                    data: {"post_id": post_id},
+                    dataType: "json",
+                    success: function (data) {
+                        div.empty();
+                        div.append('<ul style="padding-left: 0">附件:');
+                        $.each(data, function (i, attach) {
+                            var aa = '<li style="list-style: none"><a href="' + '/attach_download/' + attach.id +
+                                    '"><img src="/static/images/' + attach.file_type +
+                                    '.gif" width="30px">' + attach.file_name + ' - ' + attach.downloads +
+                                    '次 - ' + attach.file_size + '字节 - 下载权限:' + attach.download_level +
+                                    '点</a></li>';
+                            div.append(aa);
+                        });
+                        div.append('</ul>');
+                        div.unbind();
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $("#poll_btn").click(function () {
+                var poll_result = [];
+                $(".poll_option").each(function () {
+                    if ($(this).prop("checked"))
+                        poll_result.push($(this).val());
+                });
+                if ("{{ topic.poll.is_multi }}" == "True")
+                    if (poll_result.length > parseInt("{{ topic.poll.max_choices }}")) {
+                        alert("选择数目大于最大可选数，请重新选择");
+                        return false;
+                    }
+                if (poll_result.length == 0) {
+                    alert("投票选项选择不能为空");
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'poll_action' %}",
+                    data: {"poll_result": JSON.stringify(poll_result), "poll_id": "{{ topic.poll.id }}"},
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.success)
+                            location.href = "{% url 'topic' bbs.name topic.id %}";
+                        else
+                            alert(data.message);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $(".vote_btn").click(function () {
+                var link = $(this);
+                var is_topic = "";
+                if (link.data("is_topic") == "True")
+                    is_topic = "topic";
+                var tp_id = link.data("id");
+                var type = link.data("type");
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'support_against' %}",
+                    data: {"is_topic": is_topic, "tp_id": tp_id, "type": type},
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.success) {
+                            if (type == "support")
+                                link.html(" 支持" + data.new_num);
+                            else
+                                link.html(" 反对" + data.new_num);
+                        }
+                        else
+                            alert(data.message);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $("#fast_reply_btn").click(function () {
+                $(this).attr("disabled", true);
+            });
+            $(".manage_btn").click(function () {
+                var url = $(this).val();
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: {"id_list": JSON.stringify(["{{ topic.id }}"]), "forum_id": "{{ forum.id }}"},
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.success)
+                            location.href = "{% url 'topic' bbs.name topic.id %}";
+                        else
+                            alert(data.message);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                location.href = "{% url 'topic' bbs.name topic.id %}" + page + '{% if only_see %}?author={{ only_see }}{{ only_ }}{% endif %}';
+            });
+        })
+    </script>
+{% endblock %}

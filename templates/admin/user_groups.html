@@ -1,0 +1,142 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body><h1>用户组列表</h1>
+<button id="add_btn">添加</button>
+
+<table>
+    <tr>
+        <td>序号</td>
+        <td>用户组名称</td>
+        <td>需要积分</td>
+        <td>阅读权限</td>
+        <td width="200px">图标</td>
+        <td>操作</td>
+    </tr>
+    {% for group in groups %}
+        <tr style="background-color: {% cycle lemonchiffon,lightblue %}">
+            <td>{{ forloop.counter }}</td>
+            <td>{{ group.name }}</td>
+            <td>{{ group.need_credits }}</td>
+            <td>{{ group.read_level }}</td>
+            <td>
+                {% if group.icon %}
+                    <img style="height: 30px" name="{{ group.id }}" src="{% static group.icon %}">
+                {% endif %}
+            </td>
+            <td>
+                <button class="ug_edit_btn" value="{{ group.id }}">编辑</button>
+                <button class="ug_del_btn" data-name="{{ group.name }}" data-credits="{{ group.need_credits }}" value="{{ group.id }}">删除</button>
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="5">尚未添加用户组</td>
+        </tr>
+    {% endfor %}
+</table>
+</body>
+<script>
+    $(function () {
+        $(".ug_edit_btn").click(function(){
+            $.ajax({
+                type:"GET",
+                url:"{% url 'admin_edit_user_groups' %}",
+                data:{"id":$(this).val()},
+                dataType:"html",
+                success:function(data){
+                    $("#main").html(data);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            });
+            $("#main").load("{% url 'admin_edit_user_groups' %}");
+        });
+        $(".ug_del_btn").click(function(){
+            var id = $(this).val();
+            var credits = $(this).data("credits");
+            var name = $(this).data("name");
+            if(credits=="0"){
+                alert("初始等级积分为0的用户组无法删除");
+                return false;
+            }
+            if(name=="版主" || name=="管理员"){
+                alert("版主或管理员用户组无法删除");
+                return false;
+            }
+            if (confirm("确认删除此用户组？")){
+                $.ajax({
+                    type:"POST",
+                    url:"{% url 'admin_del_user_groups' %}",
+                    data:{"id":id},
+                    dataType:"json",
+                    success:function(data){
+                        if (data['success'] == false)
+                            alert(data['message'])
+                        $("#main").load("{% url 'admin_user_groups' %}");
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            }
+
+        });
+        $("#add_btn").click(function(){
+            $("#main").load("{% url 'admin_add_user_groups' %}");
+        });
+{#        $(".ug_credits_input").keyup(function () {#}
+{#            this.value = this.value.replace(/\D/g, '');#}
+{#            var n = $(this).attr("name");#}
+{#            showBtnWithName(n);#}
+{#        });#}
+{#        $(".ug_name_input").keyup(function () {#}
+{#            var n = $(this).attr("name");#}
+{#            showBtnWithName(n);#}
+{#        });#}
+{#        $(".ug_edit_btn").click(function(){#}
+{#            var id = $(this).attr("name");#}
+{#            $.get({#}
+{#                url:"{% url 'admin_user_groups_edit' %}",#}
+{#                data:{"id":id},#}
+{#                success: function(data){#}
+{#                    $("#main").load(data);#}
+{#                }#}
+{#            });#}
+{#        });#}
+{#        $(".ug_save_btn").click(function () {#}
+{#            var id = $(this).attr("name");#}
+{#            var ug_name = $("input[name=" + id + "][class='ug_name_input']").val().trim();#}
+{#            var ug_credits = $("input[name=" + id + "][class='ug_credits_input']").val();#}
+{#            if (ug_name.length == 0 || ug_credits.length == 0) {#}
+{#                alert("名称和积分不能为空");#}
+{#                return false;#}
+{#            }#}
+{#            $.ajax({#}
+{#                type: "POST",#}
+{#                url: "{% url 'admin_user_groups' %}",#}
+{#                data: {"id":id,"name":ug_name,"credits":ug_credits},#}
+{#                dataType: "json",#}
+{#                success: function (data) {#}
+{#                    if (data['success'])#}
+{#                        alert("更新成功");#}
+{#                    else {#}
+{#                        alert(data['message']);#}
+{#                        $("#main").load("{% url 'admin_user_manage' %}");#}
+{#                    }#}
+{#                },#}
+{#                error: function () {#}
+{#                    alert("信息提交失败");#}
+{#                    return false;#}
+{#                }#}
+{#            });#}
+{##}
+{#        });#}
+    });
+</script>
+</html>

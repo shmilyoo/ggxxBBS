@@ -1,0 +1,45 @@
+<div id="nav" style="width: 200px;position:relative;float:left;border: 1px #000000;">
+    <div id="menu_container">
+        <div>
+            用户：{{ user.name }}
+        </div>
+        <ul>
+            <li><label id="li1" class="slide_menu">版块管理</label>
+                <ul id="ul1">
+                    <li class="admin_left_link" value="{% url 'admin_add_forum' %}">添加版块</li>
+                    <li class="admin_left_link" value="{% url 'admin_manage_forum_id' '1' %}">版块列表</li>
+                </ul>
+            </li>
+            <li><label id="li4" class="slide_menu">帖子管理</label>
+                <ul id="ul4">
+                    <li class="admin_left_link" value="{% url 'admin_topic_manage' %}">帖子列表</li>
+                    <li class="admin_left_link" value="{% url 'admin_topic_transfer' %}">批量转移</li>
+                </ul>
+            </li>
+            <li><label id="li2" class="slide_menu">用户管理</label>
+                <ul id="ul2">
+                    <li class="admin_left_link" value="{% url 'admin_user_manage'  %}">注册用户管理</li>
+                    <li class="admin_left_link" value="{% url 'admin_user_groups' %}">用户组管理</li>
+                    <li class="admin_left_link" value="{% url 'admin_user_manage' %}">添加管理员</li>
+                    <li class="admin_left_link" value="{% url 'admin_user_manage' %}">管理员管理</li>
+                </ul>
+            </li>
+            <li><label id="li3" class="slide_menu">公告管理</label>
+                <ul id="ul3">
+                    <li class="admin_left_link">添加公告</li>
+                    <li class="admin_left_link">公告管理</li>
+                </ul>
+            </li>
+        </ul>
+
+    </div>
+</div>
+<script>
+    $(function(){
+        $(".slide_menu").click(function(){
+            var li_id = $(this).attr("id");
+            var ul_id = li_id.replace("li","ul");
+            $("#" + ul_id).slideToggle('fast');
+        });
+    })
+</script>

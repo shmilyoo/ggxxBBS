@@ -1,0 +1,117 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load humanize %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+
+{% block titlePrefix %}搜索{% endblock titlePrefix %}
+
+{% block main %}
+    <div>
+        {% include 'common/search_widget.html' %}
+    </div>
+    <div>
+        {% if type == "title" %}
+            <table class="topic_table" cellspacing="0" cellpadding="0" style="width: 100%">
+                {% for topic in results %}
+                    <tr>
+                        <td>
+                            <div>
+                            {% if topic.is_top_all %}
+                                <img width="15px" src="{% static 'images/topic_is_top_all.gif' %}">
+                            {% elif topic.is_top %}
+                                <img width="15px" src="{% static 'images/top_this.gif' %}">
+                            {% elif topic.is_locked %}
+                                <img width="15px" src="{% static 'images/topic_lock.gif' %}">
+                            {% elif topic.is_bottom %}
+                                <img width="15px" src="{% static 'images/topic_is_bottom.gif' %}">
+                            {% elif topic.is_poll %}
+                                <img src="{% static 'images/topic_poll.gif' %}">
+                            {% elif topic.post_time|is_new %}
+                                <img src="{% static 'images/topic_new.gif' %}">
+                            {% else %}
+                                <img src="{% static 'images/topic_not_new.gif' %}">
+                            {% endif %}
+                            {% if topic.subject.name %}
+                                [<a href="{% url 'forum_index' bbs.name topic.forum.tag %}?subject={{ topic.subject_id }}"><span
+                                        style="color: {{ topic.subject.color }};">{{ topic.subject.name }}</span></a>]
+                            {% endif %}
+                            <a href="{% url 'topic' bbs.name topic.id %}"><span style="color: {{ topic.title_color }};
+                                    {% if topic.title_bold %}font-weight: bold;{% endif %}">{{ topic.title|mark:kw|safe }}</span></a>
+                            {% if topic.read_level > 1 %}
+                                <span style="color: #777777">[阅读权限:{{ topic.read_level }}]</span>
+                            {% endif %}
+                            {% if topic.has_attachment %}
+                                <img width="15px" src="{% static 'images/attachment.gif' %}">
+                            {% endif %}
+                            {% if topic.is_digest %}
+                                <img src="{% static 'images/digest_small.gif' %}">
+                            {% endif %}
+                            {% if topic.has_img %}
+                                <img src="{% static 'images/image_s.gif' %}">
+                            {% endif %}
+                            {% with pages=topic.replies|get_topic_pages|length page_list=topic.replies|get_topic_pages %}
+                                {% if pages > 1 %}
+                                    {% if pages < 7 %}
+                                        {% for page in page_list %}
+                                            <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                        {% endfor %}
+                                    {% else %}
+                                        {% for page in page_list|slice:"5" %}
+                                            <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                        {% endfor %}
+                                        ...
+                                        <a href="{% url 'topic_with_page' bbs.name topic.id pages %}">{{ pages }}</a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                            </div>
+                            <div class="pl20 gray_color">
+                                {{ topic.content|striptags|safe|truncatechars:50 }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fit2l"><a
+                                    href="{% url 'user_panel_name' topic.author.name %}">{{ topic.author.nick_name }}</a>
+                            </div>
+                            <div title="{{ topic.post_time }}" class="fit2l">{{ topic.post_time|friendly_time }}</div>
+                        </td>
+                        <td>
+                            <div class="fit2l">{{ topic.replies }}</div>
+                            <div class="fit2l">{{ topic.all_hits }}</div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    搜索结果为空
+                {% endfor %}
+            </table>
+        {% elif type == "user" %}
+            <ul class="ul_flow">
+                {% for user in results %}
+                    <li class="list_user" style="padding: 5px;width: 250px">
+                        <div class="fl">
+                            <img src="{{ user.avatar|default:config.default_avatar_path }}" width="60">
+                        </div>
+                        <div class="fl pl10">
+                            <div class="oh" style="width: 150px;height: 20px">
+                                <a title="{{ user.name }}" href="{% url 'uc_info' 'summary' %}?name={{ user.name }}">
+                                    {{ user.nick_name|mark:kw|safe }}({{ user.name|mark:kw|safe }})</a>
+                            </div>
+                            <div class="oh">
+                                {{ user.user_group.name }}
+                                积分数:{{ user.credits }}
+                            </div>
+                            <div>
+                                <a href="{% url 'uc_inform' 'send_message' %}?to={{ user.name }}">
+                                    <img src="{% static 'images/message.gif' %}">发消息</a>
+                            </div>
+                        </div>
+                    </li>
+                {% empty %}
+                    搜索结果为空
+                {% endfor %}
+            </ul>
+            <div class="cb"></div>
+        {% else %}
+        {% endif %}
+    </div>
+{% endblock %}

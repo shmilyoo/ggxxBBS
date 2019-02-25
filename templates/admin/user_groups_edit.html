@@ -1,0 +1,76 @@
+{% load staticfiles %}
+{% load my_tag_filter %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<h1>编辑用户组</h1>
+
+<div>
+    <form id="edit_ug_form" method="post">
+        <div><input id="id_id" name="ug_id" type="hidden" value="{{ form.instance.id }}" /></div>
+        <div>{{ form.name.errors }}<label for="{{ form.name.auto_id }}">{{ form.name.label }}:</label>
+            {% if form.instance.name == "版主" or form.instance.name == "管理员" %}
+                {{ form.name|addattrs:"readonly=true" }}
+            {% else %}
+                {{ form.name }}
+            {% endif %}
+        </div>
+        <div>
+            {{ form.need_credits.errors }}
+            <label for="{{ form.need_credits.auto_id }}">{{ form.need_credits.label }}:</label>
+            {% if form.instance.need_credits == 0 or form.instance.name == "版主" or form.instance.name == "管理员" %}
+                {{ form.need_credits|addattrs:"readonly=true" }}
+            {% else %}
+                {{ form.need_credits }}
+            {% endif %}
+        </div>
+        <div>
+            {{ form.read_level.errors }}
+            <label for="{{ form.read_level.auto_id }}">{{ form.read_level.label }}:</label>
+            {% if form.instance.read_level == 1 or form.instance.name == "版主" or form.instance.name == "管理员" %}
+                {{ form.read_level|addattrs:"readonly=true" }}
+            {% else %}
+                {{ form.read_level }}
+            {% endif %}
+        </div>
+        <div>
+            <img id="image" height="30" src="{{ STATIC_URL }}{{ form.instance.icon }}"/>
+        </div>
+        <div>{{ form.icon.errors }}<label
+                for="{{ form.icon.auto_id }}">{{ form.icon.label }}:</label>{{ form.icon|addattrs:"style=width:400px,placeholder=静态文件相对路径" }}
+            <button id="show_img">显示</button>
+        </div>
+        <div><input id="btn" type="submit" value="保存"/><button id="back">返回</button></div>
+    </form>
+</div>
+</body>
+<script>
+    $(function () {
+        $("#show_img").click(function(){
+            var url = $("#" + "{{ form.icon.auto_id }}").val();
+            $("#image").attr("src",{{ STATIC_URL }} + url);
+            return false;
+        });
+        $("#edit_ug_form").ajaxForm({
+            dataType: "html",
+            url: "{% url 'admin_edit_user_groups' %}",
+{#            data:{'ug_id':$("#id_id").val()},#}
+            semantic: true,
+            beforeSubmit: function () {
+                //表单提交前做表单验证
+            },
+            success: function (responseText) {
+                $("#main").html(responseText);
+            }
+        });
+        $("#back").click(function(){
+            $("#main").load("{% url 'admin_user_groups' %}");
+            return false;
+        });
+    });
+</script>
+</html>

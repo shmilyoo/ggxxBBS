@@ -1,0 +1,104 @@
+{% extends 'account/info_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}{{ viewer.nick_name }}的回复帖{% endblock %}
+{% block info_content %}
+    <div>
+        {{ viewer.nick_name }}的回复帖
+    </div>
+    <div>
+        {% for b in config.bbs_names.values %}
+            <input id="radio_{{ b.name }}" type="radio"
+                   {% if bbs.name == b.name %}checked{% endif %} name="bbs_radio" value="{{ b.name }}">
+            <label for="radio_{{ b.name }}">{{ b.cnName }}</label>&nbsp;&nbsp;
+        {% endfor %}
+    </div>
+    <div class="topic_table">
+        <table cellspacing="0" cellpadding="0" style="width: 100%">
+            <tr>
+                <td width="auto">
+                    标题/回复
+                </td>
+                <td width="200px">发帖人/回帖人</td>
+                <td width="120px">发帖/回帖时间</td>
+            </tr>
+            {% for post in viewer.posts %}
+                <tr class="bbd">
+                    <td>
+                        <div>
+                            {% if post.t_is_locked %}
+                                <img width="15px" src="{% static 'images/topic_lock.gif' %}">
+                            {% elif post.t_is_poll %}
+                                <img src="{% static 'images/topic_poll.gif' %}">
+                            {% elif post.t_time|is_new %}
+                                <img src="{% static 'images/topic_new.gif' %}">
+                            {% else %}
+                                <img src="{% static 'images/topic_not_new.gif' %}">
+                            {% endif %}
+                            [<a href="{% url 'forum_index' bbs.name post.f_tag %}">{{ post.f_name }}</a>]
+                            {% if post.s_name %}
+                                [<a href="{% url 'forum_index' bbs.name post.f_tag %}?subject={{ post.s_id }}"><span
+                                    style="color: {{ post.s_color }};">{{ post.s_name }}</span></a>]
+                            {% endif %}
+                            <a href="{% url 'topic' bbs.name post.t_id %}"><span style="color: {{ post.t_title_color }};
+                                    {% if post.t_title_bold %}font-weight: bold;{% endif %}">{{ post.t_title|truncatechars:"15" }}</span></a>
+                            {% if post.t_read_level > 1 %}
+                                <span style="color: #777777">[阅读权限:{{ post.t_read_level }}]</span>
+                            {% endif %}
+                            {% if post.t_has_attach %}
+                                <img width="15px" src="{% static 'images/attachment.gif' %}">
+                            {% endif %}
+                            {% if post.t_is_digest %}
+                                <img src="{% static 'images/digest_small.gif' %}">
+                            {% endif %}
+                            {% if post.t_has_img %}
+                                <img src="{% static 'images/image_s.gif' %}">
+                            {% endif %}
+                        </div>
+                        <div class="fit2l plr20"><a href="{% url 'post' bbs.name post.id %}" class="gray_color">
+                            回复: {{ post.p_content|striptags|safe|truncatechars:100 }}</a></div>
+                    </td>
+                    <td>
+                        <div class="fit2l"><a href="{% url 'uc_info' 'summary' %}?name={{ post.tu_name  }}">
+                            {{ post.tu_nick_name }}</a></div>
+                        <div class="fit2l"><a href="{% url 'uc_info' 'summary' %}?name={{ viewer.name  }}">
+                            {{ viewer.nick_name }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fit2l">{{ post.t_time|friendly_time }}</div>
+                        <div class="fit2l">{{ post.p_time|friendly_time }}</div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div>
+        {% if viewer.posts %}
+            <div class="fr">
+                {% with list=viewer.posts %}
+                    {% include 'common/paginator_nav.html' %}
+                {% endwith %}
+            </div>
+            <div class="cb"></div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        $(function () {
+            $("input[name='bbs_radio']").change(function(){
+                var bbs_name = $(this).val();
+                if ("{{ name }}" != "")
+                    location.href = "{% url 'uc_info' 'post' %}?bbs=" + bbs_name + "&name=" + "{{ name }}";
+                else
+                    location.href = "{% url 'uc_info' 'post' %}?bbs=" + bbs_name;
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                location.href = "?page=" + page + "&bbs=" + "{{ bbs.name }}";
+            });
+        })
+    </script>
+{% endblock %}

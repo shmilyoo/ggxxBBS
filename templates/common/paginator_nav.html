@@ -1,0 +1,33 @@
+<div>
+    {% if list %}
+        {% if list.has_previous %}
+            <a class='paginator' href="javascript:void(0)" title='上一页'
+               data-page={{ list.previous_page_number }}>&lt;&lt;</a>
+        {% endif %}
+        {% if list.paginator.show_first %}
+            <a class='paginator' href="javascript:void(0)" title='首页' data-page="1">1</a>
+        {% endif %}
+        {% if list.paginator.show_first_dot %}
+            ...
+        {% endif %}
+        {% for page in list.paginator.page_range_ext %}
+            {% if page == list.number %}
+                <a class='paginator_current' title='当前页:{{ page }}'>{{ page }}</a>
+            {% else %}
+                <a class='paginator' href="javascript:void(0)"
+                   data-page={{ page }} title='{{ page }}'>{{ page }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if list.paginator.show_last_dot %}
+            ...
+        {% endif %}
+        {% if list.paginator.show_last %}
+            <a class='paginator' href="javascript:void(0)" title='最后一页'
+               data-page={{ list.paginator.num_pages }}>{{ list.paginator.num_pages }}</a>
+        {% endif %}
+        {% if list.has_next %}
+            <a class='paginator' href="javascript:void(0)" title='下一页'
+               data-page={{ list.next_page_number }}>&gt;&gt;</a>
+        {% endif %}
+    {% endif %}
+</div>

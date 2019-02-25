@@ -1,0 +1,134 @@
+{% extends 'account/base.html' %}
+{% load staticfiles %}
+{% block titlePrefix %}修改头像{% endblock %}
+{#{% block jquery %}#}
+{#    <script src="{% static 'js/jquery-1.9.0.js' %}"></script>#}
+{#{% endblock %}#}
+{% block css_and_js %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/imgareaselect-default.css' %}"/>
+    <script type="text/javascript" src="{% static 'js/jquery.imgareaselect.min.js' %}"></script>
+    <script src="{% static 'js/jquery.form.min.js' %}"></script>
+{% endblock %}
+
+{% block main %}
+    <table>
+        <tr>
+            <td colspan="2">
+                <div>
+                    <label style="vertical-align: top">原头像: </label>
+                    <img width="120" id="orig_avatar" src="
+                    {% if user.avatar %}{{ user.avatar.url }}{% else %}{{ config.default_avatar_path }}{% endif %}
+                    ">
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div>
+                    <img id="photo" src="{% static 'images/anonymous.jpg' %}" width="250">
+                </div>
+                <form method="post" id="select_pic_form" enctype="multipart/form-data">
+                    {#                <input type="file" name="avatar" id="id_avatar">#}
+                    {{ form.avatar }}
+                </form>
+            </td>
+            <td style="padding-left: 20px;vertical-align: top">
+                <div id="preview" style="width: 120px; height: 120px; overflow: hidden;display:none">
+                    <img src="{% static 'images/anonymous.jpg' %}">
+                </div>
+                <div><br>
+                    <button id="submit" style="display:none">保存</button>
+                </div>
+            </td>
+        </tr>
+    </table>
+    {#    <div>#}
+    {#        <div class="fl">#}
+    {#        </div>#}
+    {#        <div class="fl" style="padding-left: 20px">#}
+    {#        </div>#}
+    {#    </div>#}
+    {#    <div class="cb"></div>#}
+    <input id="x1" type="hidden" value="0">
+    <input id="y1" type="hidden" value="0">
+    <input id="x2" type="hidden" value="0">
+    <input id="y2" type="hidden" value="0">
+    <input id="w" type="hidden" value="0">
+    <input id="h" type="hidden" value="0">
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        var w = 0;
+        var h = 0;
+        function preview(img, selection) {
+            if (!selection.width || !selection.height)
+                return;
+            var scaleX = 120 / selection.width;
+            var scaleY = 120 / selection.height;
+            $('#preview').find('img').css({
+                width: Math.round(scaleX * 250),
+                height: Math.round(scaleY * 250 * h / w),
+                marginLeft: -Math.round(scaleX * selection.x1),
+                marginTop: -Math.round(scaleY * selection.y1)
+            });
+
+            $('#x1').val(selection.x1);
+            $('#y1').val(selection.y1);
+            $('#x2').val(selection.x2);
+            $('#y2').val(selection.y2);
+            $("#submit").show();
+            $('#preview').show();
+        }
+        $(function () {
+            $("#photo").imgAreaSelect({
+                handles: true, aspectRatio: "1:1", maxWidth: 250, maxHeight: 250, minWidth: 80, minHeight: 80,
+                onSelectEnd: preview, x1: 50, y1: 50, x2: 200, y2: 200
+            });
+            $("#id_avatar").change(function () {
+                $("#select_pic_form").ajaxSubmit({
+                    dataType: 'json',
+                    url: "{% url 'avatar_select_pic' %}",
+                    semantic: true,
+                    beforeSubmit: function () {
+                        if ($("#id_avatar").val() == "")
+                            return false;
+                    },
+                    success: function (data) {
+                        if (data.success) {
+                            w = data.width;
+                            h = data.height;
+                            $("#photo").attr("src", data.url);
+                            $('#preview').find('img').attr("src", data.url);
+                        }
+                        else
+                            alert(data["message"]);
+                    }
+                });
+            });
+            $("#submit").click(function () {
+                if ($('#preview').find('img').attr("src") == "")
+                    return false;
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'avatar_save_avatar' %}",
+                    data: {
+                        "x1": $("#x1").val(),
+                        "x2": $("#x2").val(),
+                        "y1": $("#y1").val(),
+                        "y2": $("#y2").val(),
+                        "path": $("#photo").attr("src")
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        {#                        $("#orig_avatar").attr("src",data.url)#}
+                        location.href = "{% url 'uc_avatar' %}"
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+            });
+        })
+    </script>
+{% endblock %}

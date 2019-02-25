@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>编辑版主</title>
+</head>
+<body>
+<h1>{{ forum_name }}版主管理</h1>
+<div>
+    <input id="name" type="text" placeholder="输入用户名进行搜索"
+           onkeypress="if(event.keyCode==13) {$('#search_user').click();}"/>
+    <button id="search_user">搜索</button>
+</div>
+<table>
+    <tr>
+        <td>搜索结果</td>
+        <td></td>
+        <td>版主列表</td>
+    </tr>
+    <tr>
+        <td width="100"><select id="search_result" multiple="true" style="width: 100px" size="10">
+        </select></td>
+        <td width="30" align="center">
+            <button id="add">添加</button>
+            <br>
+            <button id="delete">删除</button>
+        </td>
+        <td width="100">
+            <select id="moderator_list" multiple="true" style="width: 100px" size="10">
+                {% for user in users %}
+                    <option value="{{ user.name }}">{{ user.name }}</option>
+                {% endfor %}
+            </select>
+        </td>
+    </tr>
+</table>
+<button id="back">返回</button>
+<button id="save">保存</button>
+<input id="is_inherit" type="checkbox" disabled="disabled"><label id="for_is_inherit">下级版块是否继承</label>
+</body>
+<script>
+    $(function () {
+        $("#name").focus();
+        $("#search_user").click(function () {
+            //搜索用户，显示在左边的选择框中
+            var sel = $("#search_result");
+            sel.empty();
+            var v = $("#name").val().trim();
+            if (v != "")
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'user_search' %}",
+                    data: {"user_name": v},
+                    dataType: "json",
+                    success: function (data) {
+                        $.each(data, function (i, element) {
+                            sel.append('<option value=' + element['name'] + '>' + element['name'] + '</option>');
+                        });
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+        });
+        $("#add").click(function () {
+            //将左边选择框选中的用户添加到右边
+            var list1 = $("#moderator_list");
+            var list0 = $("#search_result");
+            list0.find("option:selected").each(function () {
+                var count = list1.find("option").length;
+                var has_value = false;
+                for (var i = 0; i < count; i++) {
+                    if (list1.get(0).options[i].value == $(this).val()) {
+                        has_value = true;
+                        break;
+                    }
+                }
+                if (!has_value)
+                    list1.append('<option value=' + $(this).text() + '>' + $(this).text() + '</option>');
+            });
+        });
+        $("#delete").click(function () {
+            //将右边选中的用户删除
+            $("#moderator_list").find("option:selected").each(function () {
+                $(this).remove();
+            });
+        });
+        $("#save").click(function () {
+            //保存右边的用户到此版块版主
+            var str_moderators = "";
+            $("#moderator_list").find("option").each(function (i, element) {
+                if (i == 0)
+                    str_moderators = str_moderators + $(element).text();
+                else
+                    str_moderators = str_moderators + "," + $(element).text();
+            });
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_edit_forum_moderator' forum_id %}",
+                data: {"moderators": str_moderators},
+                dataType: "json",
+                success: function (data) {
+                    alert(data['flag'])
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            });
+        });
+        $("#back").click(function(){
+            $("#main").load("{% url 'admin_manage_forum' %}")
+        });
+    });
+</script>
+</html>

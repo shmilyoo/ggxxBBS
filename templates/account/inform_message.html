@@ -1,0 +1,212 @@
+{% extends 'account/inform_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% block titlePrefix %}收件箱{% endblock %}
+{% block jquery %}
+    {#jquery 1.11 与 simplemodal 1.4.4冲突，改为jquery 1.9.0版本#}
+    <script src="{% static 'js/jquery-1.9.0.js' %}"></script>
+{% endblock %}
+{% block css_and_js %}
+    <script src="{% static 'js/jquery.simplemodal.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+{% endblock %}
+
+{% block inform_content %}
+    <div>
+        {% for message in message_list %}
+            <div id="{{ message.id }}_div"
+                    {% if not forloop.last %} class="bbd"{% endif %}
+                    {% if not message.has_read %} style="font-weight: bold"{% endif %}
+                    >
+                <table>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="{{ message.id }}" class="message_checkbox">
+                        </td>
+                        <td colspan="2">
+                                <span id="{{ message.id }}_from">
+                            来自:{{ message.from_user.nick_name }}({{ message.from_user.name }})
+                            {{ message.time|str_datetime }}</span>
+                                <a href="javascript:void(0)" class="show_modal" data-id="{{ message.id }}">查看</a>
+                                <a href="javascript:void(0)" class="show_modal_reply" data-id="{{ message.id }}">回复</a>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        </td>
+                        <td width="50px" style="vertical-align: top">
+                            <div>内容:</div>
+                        </td>
+                        <td>
+                            {{ message.content|safe|truncatechars:70 }}
+                            <div id="{{ message.id }}_content" style="display: none">{{ message.content|safe }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% empty %}
+            当前没有相应的短消息
+        {% endfor %}
+    </div>
+    {% if message_list %}
+        <div class="fr">
+            {% with list=message_list %}
+                {% include 'common/paginator_nav.html' %}
+            {% endwith %}
+        </div>
+        <div class="cb"></div>
+    <div>
+        <button id="select_all_btn">全选/反选</button>
+        <button id="set_read_btn">标记为已读</button>
+        <button id="del_message_btn">删除</button>
+    </div>
+    {% endif %}
+
+    {#    模态窗口开始#}
+    <div id="modal_window" style="display: none">
+        <div id="from_user_info" class="m5tb"></div>
+        <div id="message_div" class="m5tb"></div>
+        <div id="reply_div" style="display: none" class="m5tb">
+            <textarea id="reply_input" style="width: 95%"></textarea>
+        </div>
+        <div class="m5tb fr">
+            <button id="show_reply_btn">回复</button>
+            <button id="reply_btn" style="display: none">发送</button>
+            <button class="simplemodal-close">关闭</button>
+        </div>
+        <div class="cb"></div>
+    </div>
+
+    {#    模态窗口结束#}
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        function get_checked_list() {
+            var list = [];
+            $(".message_checkbox").each(function () {
+                if ($(this).prop("checked"))
+                    list.push($(this).val())
+            });
+            return list;
+        }
+        function set_div_read(id) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'set_message_read' %}",
+                data: {"id": id},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        var div = $("#" + id + "_div");
+                        div.css("font-weight", "normal");
+                        refresh_inform_tip_by_list(data.count)
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        function set_div_bulk_read(id_list) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'set_message_bulk_read' %}",
+                data: {"id_list": JSON.stringify(id_list)},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        $.each(id_list, function (i, element) {
+                            $("#" + element + "_div").css("font-weight", "normal");
+                        });
+                        refresh_inform_tip_by_list(data.count)
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        function bulk_del_receive_message(id_list) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'bulk_del_receive_message' %}",
+                data: {"id_list": JSON.stringify(id_list)},
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        location.href = "{% url 'uc_inform' 'message' %}";
+                    }
+                    else
+                        alert(data.message);
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            })
+        }
+        $(function () {
+            $(".show_modal").click(function () {
+                var message_id = $(this).data("id");
+                $("#from_user_info").html($("#" + message_id + "_from").html());
+                $("#message_div").html($("#" + message_id + "_content").html());
+                $("#reply_div").hide();
+                $("#reply_btn").hide();
+                $("#show_reply_btn").show();
+                $("#reply_input").val("");
+                $("#modal_window").modal();
+                $(".simplemodal-container").css("height",$("#modal_window").height() + 20);
+{#                $("#modal_window").css("height",$("#modal_window").height())#}
+                set_div_read(message_id);
+            });
+            $("#show_reply_btn").click(function () {
+                $("#reply_div").show();
+                $("#reply_btn").show();
+                $(this).hide();
+                $(".simplemodal-container").css("height",$("#modal_window").height() + 20);
+            });
+            $(".show_modal_reply").click(function () {
+                var message_id = $(this).data("id");
+                $("#from_user_info").html($("#" + message_id + "_from").html());
+                $("#message_div").html($("#" + message_id + "_content").html());
+                $("#reply_div").show();
+                $("#reply_btn").show();
+                $("#show_reply_btn").hide();
+                $("#reply_input").val("");
+                $("#modal_window").modal();
+                $(".simplemodal-container").css("height",$("#modal_window").height() + 20);
+                set_div_read(message_id);
+            });
+            $("#reply_btn").click(function () {
+
+                $.modal.close();
+            });
+            $("#set_read_btn").click(function () {
+                var id_list = get_checked_list();
+                if (id_list.length != 0)
+                    set_div_bulk_read(id_list);
+            });
+            $("#select_all_btn").click(function () {
+                var check_class = $(".message_checkbox");
+                if ($(".message_checkbox:checked").length == check_class.length)
+                    check_class.prop("checked", "");
+                else
+                    check_class.prop("checked", "checked");
+            });
+            $("#del_message_btn").click(function () {
+                var id_list = get_checked_list();
+                if (id_list.length != 0)
+                    bulk_del_receive_message(id_list);
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                location.href = "?page=" + page;
+            });
+        })
+    </script>
+{% endblock %}

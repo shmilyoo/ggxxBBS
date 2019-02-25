@@ -1,0 +1,59 @@
+{% load staticfiles %}
+{% load my_tag_filter %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<h1>添加用户组</h1>
+
+<div>
+    <form id="add_ug_form" method="post">
+
+        <div>{{ form.name.errors }}<label for="{{ form.name.auto_id }}">{{ form.name.label }}:</label>{{ form.name }}
+        </div>
+        <div>{{ form.need_credits.errors }}<label for="{{ form.need_credits.auto_id }}">{{ form.need_credits.label }}:
+        </label>{{ form.need_credits }}
+        </div>
+        <div>{{ form.read_level.errors }}<label for="{{ form.read_level.auto_id }}">{{ form.read_level.label }}:
+        </label>{{ form.read_level }}
+        </div>
+        <div>
+            <img id="image" height="30"/>
+        </div>
+        <div>{{ form.icon.errors }}<label
+                for="{{ form.icon.auto_id }}">{{ form.icon.label }}:</label>{{ form.icon|addattrs:"style=width:400px,placeholder=静态文件相对路径" }}
+            <button id="show_img">显示</button>
+        </div>
+        <div><input id="btn" type="submit" value="添加"/><button id="back">返回</button></div>
+    </form>
+</div>
+</body>
+<script>
+    $(function () {
+{#        $("#icon-clear_id").attr("disabled", "disabled");#}
+        $("#show_img").click(function(){
+            var url = $("#" + "{{ form.icon.auto_id }}").val();
+            $("#image").attr("src",{{ STATIC_URL }} + url);
+            return false;
+        });
+        $("#add_ug_form").ajaxForm({
+            dataType: "html",
+            url: "{% url 'admin_add_user_groups' %}",
+            semantic: true,
+            beforeSubmit: function () {
+                //表单提交前做表单验证
+            },
+            success: function (responseText) {
+                $("#main").html(responseText);
+            }
+        });
+        $("#back").click(function(){
+            $("#main").load("{% url 'admin_user_groups' %}");
+            return false;
+        });
+    });
+</script>
+</html>

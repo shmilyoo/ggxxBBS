@@ -1,0 +1,128 @@
+{% extends 'account/info_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{#用户主题帖和收藏贴模板#}
+{% block titlePrefix %}{{ viewer.nick_name }}的主题帖{% endblock %}
+{% block info_content %}
+    <div>
+        {{ viewer.nick_name }}的{% if info_type == "topic" %}主题{% else %}收藏{% endif %}帖
+    </div>
+    <div>
+        {% for b in config.bbs_names.values %}
+            <input id="radio_{{ b.name }}" type="radio"
+                   {% if bbs.name == b.name %}checked{% endif %} name="bbs_radio" value="{{ b.name }}">
+            <label for="radio_{{ b.name }}">{{ b.cnName }}</label>&nbsp;&nbsp;
+        {% endfor %}
+    </div>
+    <div class="topic_table">
+        <table cellspacing="0" cellpadding="0" style="width: 100%">
+            <tr>
+                <td width="auto">
+                    标题
+                </td>
+                <td width="150px">作者</td>
+                <td width="80px">回复/查看</td>
+                <td width="150px">最后发表</td>
+            </tr>
+            {% for topic in viewer.topics %}
+                <tr>
+                    <td>
+                        {% if topic.is_top_all %}
+                            <img width="15px" src="{% static 'images/topic_is_top_all.gif' %}">
+                        {% elif topic.is_top %}
+                            <img width="15px" src="{% static 'images/top_this.gif' %}">
+                        {% elif topic.is_locked %}
+                            <img width="15px" src="{% static 'images/topic_lock.gif' %}">
+                        {% elif topic.is_bottom %}
+                            <img width="15px" src="{% static 'images/topic_is_bottom.gif' %}">
+                        {% elif topic.is_poll %}
+                            <img src="{% static 'images/topic_poll.gif' %}">
+                        {% elif topic.post_time|is_new %}
+                            <img src="{% static 'images/topic_new.gif' %}">
+                        {% else %}
+                            <img src="{% static 'images/topic_not_new.gif' %}">
+                        {% endif %}
+                        [<a href="{% url 'forum_index' bbs.name topic.f_tag %}">{{ topic.f_name }}</a>]
+                        {% if topic.subject_name %}
+                            [<a href="{% url 'forum_index' bbs.name topic.f_tag %}?subject={{ topic.subject_id }}"><span
+                                style="color: {{ topic.subject_color }};">{{ topic.subject_name }}</span></a>]
+                        {% endif %}
+                        <a href="{% url 'topic' bbs.name topic.id %}"><span style="color: {{ topic.title_color }};
+                                {% if topic.title_bold %}font-weight: bold;{% endif %}">{{ topic.title|truncatechars:"15" }}</span></a>
+                        {% if topic.read_level > 1 %}
+                            <span style="color: #777777">[阅读权限:{{ topic.read_level }}]</span>
+                        {% endif %}
+                        {% if topic.has_attachment %}
+                            <img width="15px" src="{% static 'images/attachment.gif' %}">
+                        {% endif %}
+                        {% if topic.is_digest %}
+                            <img src="{% static 'images/digest_small.gif' %}">
+                        {% endif %}
+                        {% if topic.has_img %}
+                            <img src="{% static 'images/image_s.gif' %}">
+                        {% endif %}
+                        {% with pages=topic.replies|get_topic_pages|length page_list=topic.replies|get_topic_pages %}
+                            {% if pages > 1 %}
+                                {% if pages < 7 %}
+                                    {% for page in page_list %}
+                                        <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for page in page_list|slice:"5" %}
+                                        <a href="{% url 'topic_with_page' bbs.name topic.id page %}">{{ page }}</a>
+                                    {% endfor %}
+                                    ...
+                                    <a href="{% url 'topic_with_page' bbs.name topic.id pages %}">{{ pages }}</a>
+                                {% endif %}
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <div class="fit2l"><a
+                                href="{% url 'user_panel_name' topic.author_name %}">{{ topic.author_nickname }}</a>
+                        </div>
+                        <div title="{{ topic.post_time }}" class="fit2l">{{ topic.post_time|friendly_time }}</div>
+                    </td>
+                    <td>
+                        <div class="fit2l">{{ topic.replies }}</div>
+                        <div class="fit2l">{{ topic.all_hits }}</div>
+                    </td>
+                    <td>
+                        <div class="fit2l">
+                            <a href="{% url 'user_panel_name' topic.last_reply_name %}">{{ topic.last_reply_nickname }}</a>
+                        </div>
+                        <div title="{{ topic.post_time }}" class="fit2l">{{ topic.last_reply_time|friendly_time }}</div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div>
+        {% if viewer.topics %}
+            <div class="fr">
+                {% with list=viewer.topics %}
+                    {% include 'common/paginator_nav.html' %}
+                {% endwith %}
+            </div>
+            <div class="cb"></div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block script_at_page_end %}
+    <script>
+        $(function () {
+            $("input[name='bbs_radio']").change(function(){
+                var bbs_name = $(this).val();
+                if ("{{ name }}" != "")
+                    location.href = "{% url 'uc_info' info_type %}?bbs=" + bbs_name + "&name=" + "{{ name }}";
+                else
+                    location.href = "{% url 'uc_info' info_type %}?bbs=" + bbs_name;
+            });
+            $(".paginator").click(function () {
+                var page = $(this).data("page");
+                location.href = "?page=" + page + "&bbs=" + "{{ bbs.name }}";
+            });
+        })
+    </script>
+{% endblock %}

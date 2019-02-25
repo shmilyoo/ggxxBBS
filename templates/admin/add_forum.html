@@ -1,0 +1,255 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>添加版块</title>
+    {% load my_tag_filter %}
+    <link href="{% static 'css/zTreeStyle.css' %}" type="text/css" rel="stylesheet"/>
+    {#    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>#}
+    <script src="{% static 'js/jquery.ztree.all-3.5.min.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/colpick.js' %}"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/colpick.css' %}"/>
+    <script>
+        if (!document.getElementById("main"))
+            top.location.href = {% url 'admin_index' %};
+    </script>
+</head>
+<body>
+<div>
+    <form action="{% url 'admin_add_forum' %}" method="post" id="addForumForm" enctype="multipart/form-data">
+        <div>{{ form.id }}</div>
+        <div>
+            {{ form.non_field_errors }}{{ form.belong.errors }}{{ form.parent_id.errors }}
+            <label for="{{ form.belong.auto_id }}">{{ form.belong.label }}:</label>{{ form.belong }}
+            &nbsp;&nbsp;<label
+                for="parent_name_sel">{{ form.parent_id.label }}:</label>
+            <input id="parent_name_sel" type="text" readonly value="" placeholder="选择父版块"
+                   style="width:120px;" onclick="showHideMenu();"/>
+            <input type="hidden" id="parent_id" name="parent_id"/>
+            &nbsp;<a id="menuBtn" href="javascript:void(0)" onclick="showHideMenu(); return false;">选择</a></li>
+        </div>
+        <div>{{ form.name.errors }}<label for="{{ form.name.auto_id }}">{{ form.name.label }}:</label>{{ form.name }}
+        </div>
+        <div>{{ form.tag.errors }}<label for="{{ form.tag.auto_id }}">{{ form.tag.label }}:</label>{{ form.tag }}</div>
+        <div>主题:
+            <span id="subjects_area"></span>
+            <button id="add_subject_btn">添加</button>
+            <input id="subject_list_str" name="subject_list_str" type="hidden">
+        </div>
+        <div id="subject_modify_div" style="display: none">
+            <input id="subject_id" type="hidden"/>
+            名称:<input id="subject_name" width="50" type="text">&nbsp;
+            颜色:<input class="picker" readonly value="000000">&nbsp;
+            <button id="modify_subject_btn">加入</button>
+            <button id="del_subject_btn" style="visibility: hidden">删除</button>
+        </div>
+        <div>{{ form.descr.errors }}<label for="{{ form.descr.auto_id }}">{{ form.descr.label }}:</label></div>
+        <div>
+            {{ form.descr|addattrs:"style=width:100%" }}</div>
+        <div>{{ form.content.errors }}<label for="{{ form.content.auto_id }}">{{ form.content.label }}:</label></div>
+        <div>
+            {{ form.content|addattrs:"style=height:150px" }}</div>
+        <div>{{ form.allow_topic.errors }}<label
+                for="{{ form.allow_topic.auto_id }}">{{ form.allow_topic.label }}:</label>{{ form.allow_topic }}</div>
+        <div>{{ form.icon.errors }}<label for="{{ form.icon.auto_id }}">{{ form.icon.label }}:</label>{{ form.icon }}
+        </div>
+        <div>{{ form.topic_credit.errors }}<label
+                for="{{ form.topic_credit.auto_id }}">{{ form.topic_credit.label }}:</label>{{ form.topic_credit }}
+        </div>
+        <div>{{ form.post_credit.errors }}<label
+                for="{{ form.post_credit.auto_id }}">{{ form.post_credit.label }}:</label>{{ form.post_credit }}</div>
+        <div>{{ form.visit_level.errors }}<label
+                for="{{ form.visit_level.auto_id }}">{{ form.visit_level.label }}:</label>{{ form.visit_level }}</div>
+        <div>{{ form.topic_level.errors }}<label
+                for="{{ form.topic_level.auto_id }}">{{ form.topic_level.label }}:</label>{{ form.topic_level }}</div>
+        <div>{{ form.post_level.errors }}<label
+                for="{{ form.post_level.auto_id }}">{{ form.post_level.label }}:</label>{{ form.post_level }}</div>
+        <div><input id="btn" type="submit" value="确定"/></div>
+    </form>
+</div>
+<div id="menuContent" class="menuContent" style="display:none; position: absolute;">
+    <ul id="treeDemo" class="ztree" style="margin-top:0; width:160px;"></ul>
+</div>
+</body>
+<script type="text/javascript">
+    var setting = {
+        view: {
+            dblClickExpand: false,
+            showIcon: false
+        },
+        data: {
+            simpleData: {
+                enable: true,
+                idKey: "id",
+                pIdKey: "parent_id",
+                rootPId: 0
+            }
+        },
+        callback: {
+//            beforeClick: beforeClick,
+            onClick: onClick
+        }
+    };
+
+    var zNodes = [
+//			{id:6, pId:0, name:"重庆"},
+//			{id:4, pId:0, name:"河北省", open:true},
+//			{id:64, pId:6, name:"三明"}
+    ];
+
+    function onClick(e, treeId, treeNode) {
+        var parent_name_sel = $("#parent_name_sel");
+        parent_name_sel.attr("value", treeNode['name']);
+        var parent_id_input = $("#parent_id");
+        parent_id_input.attr("value", treeNode['id']);
+        hideMenu();
+    }
+
+    function showMenu() {
+        var parent_name_sel = $("#parent_name_sel");
+        var treeOffset = parent_name_sel.position();
+        $("#menuContent").css({
+            left: treeOffset.left + "px",
+            top: treeOffset.top + parent_name_sel.outerHeight() + "px"
+        }).slideDown("fast");
+    }
+    function hideMenu() {
+        $("#menuContent").fadeOut("fast");
+    }
+    function showHideMenu() {
+        if ($("#id_belong").val() == "0") {
+            alert("请选择所属论坛");
+            return;
+        }
+        if ($("#menuContent").css("display") == "none")
+            showMenu();
+        else
+            hideMenu();
+    }
+    function show_edit_container() {
+        {# 点击每一个主题链接时，显示编辑主题的div#}
+        var subject_id = $(this).attr("id");
+        var subject_color = $(this).data("color");
+        var subject_name = $(this).text();
+        $("#modify_subject_btn").text("更新");
+        $("#subject_id").val(subject_id);
+        $("#subject_name").val(subject_name);
+        $(".picker").val(subject_color).css("border-right", "20px solid " + subject_color);
+        var s = $("#subject_modify_div");
+        var del = $("#del_subject_btn");
+        if (s.css("display") == "none")
+            s.slideDown('fast');
+        del.css("visibility", "visible");
+        return false;
+    }
+    $(function () {
+        var subject_index = 0;
+        var subject_list = [];
+        $("#btn").click(function () {
+            var data = CKEDITOR.instances.id_content.getData();
+            $("#id_content").val(data);
+            subject_list = [];
+            $.each($(".subject_list"),function(){
+                subject_list.push({"name":$(this).html().trim(),"color":"#" + $(this).data("color")});
+            });
+            $("#subject_list_str").val(JSON.stringify(subject_list));
+        });
+        $("#add_subject_btn").click(function () {
+            $("#modify_subject_btn").text("加入");
+            $("#subject_name").val("");
+            $(".picker").val("000000").css("border-right", "20px solid #000000");
+            var s = $("#subject_modify_div");
+            if (s.css("display") == "none")
+                s.slideDown('fast');
+            var del = $("#del_subject_btn");
+            del.css("visibility", "hidden");
+            return false;
+        });
+        $("#del_subject_btn").click(function () {
+            var subject_id = $("#subject_id").val();
+            $("#" + subject_id).remove();
+            $("#subject_modify_div").slideUp("fast");
+            return false;
+        });
+        $("#modify_subject_btn").click(function () {
+            var subject_name = $("#subject_name").val().trim();
+            var subject_color = $(".picker").val();
+            var container = $("#subjects_area");
+            var flag = $(this).text();
+            if (flag == "加入"){   {# 加入主题 #}
+                container.append('<a class="subject_list" id="subject_' + subject_index + '" href="javascript:void(0)" ' +
+                'style="margin-right:10px;' +'color:#' + subject_color + '" data-color="' + subject_color + '">' + subject_name + '</a>');
+                $('#subject_' + subject_index).bind("click", show_edit_container);
+                subject_index += 1;
+            }
+            else{  {# 修改主题 #}
+                var subject_id = $("#subject_id").val();
+                $("#" + subject_id).data("color",subject_color).css("color","#" + subject_color).html(subject_name);
+            }
+            $("#subject_modify_div").slideUp('fast');
+            return false;
+        });
+        $('.picker').colpick({
+            layout: 'hex',
+            submit: 0,
+            colorScheme: 'light',
+            onChange: function (hsb, hex, rgb, el, bySetColor) {
+                $(el).css('border-color', '#' + hex);
+                // Fill the text box just if the color was set using the picker, and not the colpickSetColor function.
+                if (!bySetColor) $(el).val(hex);
+            }
+        }).keyup(function () {
+            $(this).colpickSetColor(this.value);
+        });
+{#        JSON.stringify(subject_list)#}
+        $("#addForumForm").ajaxForm({
+            //target: '#main',
+            dataType: 'html',
+            semantic: true,
+            beforeSubmit: function () {
+                if ($("#id_name").val().trim() == ""){
+                    alert("版块名称不能为空");
+                    return false;}
+                if ($("#id_tag").val().trim() == ""){
+                    alert("版块标签不能为空");
+                    return false;}
+                if ($("#id_belong").val().trim() == "0"){
+                    alert("请选择所属论坛");
+                    return false;}
+                if ($("#parent_id").val().trim() == ""){
+                    alert("请选择父版块");
+                    return false;}
+                if ($("#id_descr").val().trim() == ""){
+                    alert("请填写版块简要介绍");
+                    return false;}
+            },
+            success: function (responseText, statusText, xhr, $form) {
+                $("#main").html(responseText);
+            }
+        });
+
+        $("#id_belong").change(function () {
+            if ($(this).val() != "0")
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'get_forums_zTree_json' %}",
+                    data: {"bbs_id": $("#id_belong").val()},
+                    dataType: "json",
+                    success: function (data) {
+                        $("#parent_name_sel").attr("value", "");
+                        $("#parent_id").attr("value", "");
+                        zNodes = data;
+                        $.fn.zTree.destroy();
+                        $.fn.zTree.init($("#treeDemo"), setting, zNodes);
+                    },
+                    error: function () {
+                        alert("信息提交失败");
+                    }
+                });
+        });
+    });
+</script>
+</html>

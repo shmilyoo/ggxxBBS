@@ -1,0 +1,53 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head lang="zh">
+    <meta charset="UTF-8">
+    <title>{% block title %}{% block titlePrefix %}{{ title|default:"首页" }}{% endblock titlePrefix %} - 用户中心 -
+        公共信息网论坛系统{% endblock %}</title>
+    <link href="{% static 'css/default.css' %}" type="text/css" rel="stylesheet"/>
+    {% block jquery %}
+        <script src="{% static 'js/jquery-1.11.2.min.js' %}"></script>
+    {% endblock %}
+    <script src="{% static 'js/my.js' %}"></script>
+    {% block css_and_js %}{% endblock %}
+</head>
+<body>
+{% block top %}
+    <div style="height: 100px;background-color: #0066cc"></div>
+{% endblock top %}
+
+<div id="uc_middle">
+    {% block menu %}
+        <div id="uc_menu">
+            <div class="menu_title">
+                用户中心:{{ user.name }}
+            </div>
+            <div class="a{% if menu == "inform" %} active{% endif %}">
+                <a href="{% url 'uc_inform' 'message' %}">
+                    用户消息
+                    <label id="new_inform_label" style="color:#cc5500;{% if unread.0 == 0 and unread.1 == 0 %}display:none{% endif %}">新</label>
+                </a>
+            </div>
+            <div class="a{% if menu == "data" %} active{% endif %}"><a href="{% url 'uc_data' %}">个人资料</a></div>
+            <div class="a{% if menu == "info" %} active{% endif %}"><a href="{% url 'uc_info' 'summary' %}">个人信息</a></div>
+            <div class="a{% if menu == "avatar" %} active{% endif %}"><a href="{% url 'uc_avatar' %}">修改头像</a></div>
+            <div class="a{% if menu == "password" %} active{% endif %}"><a href="{% url 'uc_password' %}">修改密码</a></div>
+        </div>
+    {% endblock menu %}
+
+    <div id="uc_main">
+        {% block main %}{% endblock main %}
+    </div>
+    <div class="cb"></div>
+</div>
+
+{% block footer %}
+    <div style="clear:both;padding-top: 10px;">
+        <hr>
+        制作，版权等信息
+    </div>
+{% endblock footer %}
+</body>
+{% block script_at_page_end %}{% endblock script_at_page_end %}
+</html>

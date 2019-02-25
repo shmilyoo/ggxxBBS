@@ -1,0 +1,228 @@
+{% extends 'jyxc/child_bbs_base.html' %}
+{% load staticfiles %}
+{% load my_tag_filter %}
+{% load humanize %}
+{% block titlePrefix %}发表新贴 - {{ forum.name }}{% endblock titlePrefix %}
+{% block css_and_js %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/json2.js' %}"></script>
+    <script src="{% static 'js/colpick.js' %}"></script>
+    <script src="{% static 'js/jquery.form.min.js' %}"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/colpick.css' %}"/>
+{% endblock css_and_js %}
+
+{% block main %}
+    {{ forum.name }}-{{ forum.tag }}
+    -{{ user.name }}
+    <hr>
+    <!-- 版块层级导航条开始 -->
+    <div>
+        <a href="{% url 'index' bbs.name %}">论坛首页</a>
+        {% for path in forum.path_lists %}
+            &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name path.tag %}">{{ path.name }}</a>
+        {% endfor %}
+        &nbsp;>&nbsp;<a href="{% url 'forum_index' bbs.name forum.tag %}">{{ forum.name }}</a>
+    </div>
+    <!-- 版块层级导航条结束 -->
+    <!-- 发帖区域开始 -->
+    <div>
+        <form id="form_new_topic" action="
+        {% if tp.is_topic %}
+            {% url 'forum_edit_tp' bbs.name tp.id 't' %}
+        {% else %}
+            {% url 'forum_edit_tp' bbs.name tp.id 'p' %}
+        {% endif %}
+        " method="post">
+            {% if tp.is_topic %}
+                <div>{{ tp_form.title.errors }}
+                    <label for="subject">主题: </label>
+                    <select name="subject" id="subject">
+                        {% for subject in forum.subjects %}
+                            <option {% if subject.name == tp.subject.name %}selected{% endif %}
+                                    value="{{ subject.id }}" style="color: {{ subject.color }}">
+                                {% if subject.name == "" %}默认{% else %}{{ subject.name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label for="{{ tp_form.title.auto_id }}">{{ tp_form.title.label }}: </label>
+                    {{ tp_form.title|addattrs:"style=width:400px" }}
+                    {% if is_manager %}
+                        {{ tp_form.title_bold|addattrs:"title=标题是否加粗" }}<label for="id_title_bold">加粗</label>&nbsp;
+                        &nbsp;
+                        <input id="id_title_color" maxlength=16 name="title_color" title="标题颜色" class="picker" readonly
+                               value="{{ tp.title_color|remove_color_prefix }}"
+                               style="border-color: {{ tp.title_color }}">
+                    {% endif %}
+                </div>
+            {% else %}
+                <div>
+                    <div>回复主题帖: {{ tp.topic.title }}</div>
+                    <div>{{ tp.prefix }}</div>
+                </div>
+            {% endif %}
+            <div>正文:</div>
+            <div>{{ tp_form.content.errors }}{{ tp_form.content }}</div>
+            <!-- 附件显示区域开始 -->
+            <div id="show_attachment">
+                {% for attach in tp.attachments %}
+                    <div id="{{ attach.id }}" class="attachment_div" data-file_name="{{ attach.file_name }}"
+                         data-file_path="{{ attach.file.url }}" data-file_size="{{ attach.file_size }}"
+                         data-type="original"
+                         data-download_level="{{ attach.download_level }}" data-file_type="{{ attach.file_type }}">
+                        <span>附件名称: {{ attach.file_name }}</span>&nbsp;&nbsp;
+                        <span>大小: {{ attach.file_size }}字节</span>&nbsp;&nbsp;
+                        <span>阅读权限: {{ attach.download_level }}</span>&nbsp;&nbsp;
+                        <a id="del_{{ attach.id }}" href="javascript:void(0)"
+                           onclick="del_attach('{{ attach.id }}')">删除</a></div>
+                {% endfor %}
+            </div>
+            <!-- 附件显示区域结束 -->
+            <div><input id="btn_submit" type="submit" value="保存"></div>
+            {% if tp.is_topic %}
+                <div>
+                    <label for="{{ tp_form.is_hide.auto_id }}">{{ tp_form.is_hide.label }}: </label>{{ tp_form.is_hide }}
+                    <label for="id_read_level">{{ tp_form.read_level.label }}: </label>
+                    <input type="number" value="{{ tp_form.instance.read_level }}" id="id_read_level" name="read_level"
+                           min="{{ forum.visit_level }}" max="10000" style="width: 50px;">
+                </div>
+            {% endif %}
+            <input type="hidden" id="new_attachments_str" name="new_attachments">
+            <input type="hidden" id="del_original_attachments_str" name="del_original_attachments">
+            <input type="hidden" id="attachments_num" name="attachments_num">
+        </form>
+
+        <form id="form_upload_file" method="post">
+            <div>
+                {#添加#}
+                <label for="id_file_name">显示名称: </label>{{ attach_form.file_name }}
+                <label for="id_download_level">下载权限: </label>{{ attach_form.download_level|addattrs:"max=10000,style=width:60px" }}
+                <label for="id_file">文件: </label>{{ attach_form.file }}
+                <input id="btn_upload_file" type="submit" value="上传">
+            </div>
+        </form>
+    </div>
+    <!-- 发帖区域结束 -->
+
+{% endblock main %}
+{% block script_at_page_end %}
+    <script>
+        {#        原有的附件被删除列表#}
+        var del_original_attach_list = [];
+        {#        轮询添加附件的div，将附件信息保存为json格式字符串#}
+        function get_new_attachments_string() {
+            var attach_div = $(".attachment_div");
+            var attachments = [];
+            if (attach_div.length > 0)
+                attach_div.each(function () {
+                    if ($(this).data("type") == "new") {
+                        var file_name = $(this).data("file_name");
+                        var file_path = $(this).data("file_path");
+                        var file_size = $(this).data("file_size");
+                        var download_level = $(this).data("download_level");
+                        var file_type = $(this).data("file_type");
+                        var storage_name = $(this).attr("id");
+                        var attachment = {
+                            "file_name": file_name,
+                            "download_level": download_level,
+                            "file_path": file_path,
+                            "storage_name": storage_name,
+                            "size": file_size,
+                            "type": file_type
+                        };
+                        attachments.push(attachment);
+                    }
+                });
+            return JSON.stringify(attachments);
+        }
+        function check_upload_file() {
+            var file = $("#id_file").val();
+            var file_name = $("#id_file_name").val().trim();
+            if (file == "") {
+                alert("请选择需要上传的文件");
+                return false;
+            }
+            if (file_name == "") {
+                alert("请填写文件显示的名称");
+                return false;
+            }
+        }
+        function del_attach(id) {
+            var attach_div = $("#" + id);
+            if (attach_div.data("type") == "original") {
+                var file_name = attach_div.data("file_name");
+                var file_path = attach_div.data("file_path");
+                var file_size = attach_div.data("file_size");
+                var download_level = attach_div.data("download_level");
+                var file_type = attach_div.data("file_type");
+                var storage_name = attach_div.attr("id");
+                var attachment = {
+                    "file_name": file_name,
+                    "download_level": download_level,
+                    "file_path": file_path,
+                    "storage_name": storage_name,
+                    "size": file_size,
+                    "type": file_type
+                };
+                del_original_attach_list.push(attachment);
+            }
+            attach_div.remove();
+        }
+        $(function () {
+            $("#btn_submit").click(function () {
+                if ("{{ tp.is_topic }}" == "True")
+                    if ($("#id_title").val().trim() == "") {
+                        alert("标题不能为空");
+                        return false;
+                    }
+                $("#new_attachments_str").val(get_new_attachments_string());
+                $("#del_original_attachments_str").val(JSON.stringify(del_original_attach_list));
+                $("#attachments_num").val($(".attachment_div").length);
+            });
+            {#            异步提交上传文件form，添加附件div#}
+            $("#form_upload_file").ajaxForm({
+                dataType: "json",
+                url: "{% url 'upload_attachment' %}",
+                semantic: true,
+                beforeSubmit: check_upload_file,
+                success: function (data) {
+                    {#                    引用了json2.js，以支持IE6,7#}
+                    if (data.success) {
+                        {#                        将附件所有信息保存在div的data中，保存帖子的时候轮询class为attachment_div的div元素，取出数据post#}
+                        var file_name = data.data.file_name;
+                        var file_path = data.data.file_path;
+                        var file_size = data.data.size;
+                        var download_level = data.data.download_level;
+                        var storage_name = data.data.storage_name;
+                        var type = data.data.type;
+                        var area = $("#show_attachment");
+                        area.append('<div id="' + storage_name + '" class="attachment_div" data-file_name="'
+                        + file_name + '" data-type="new" data-file_path="' + file_path + '" data-file_size="' + file_size
+                        + '" data-download_level="' + download_level + '" data-file_type="' + type + '"><span>附件名称: '
+                        + file_name + '</span>&nbsp;&nbsp;<span>大小: ' + file_size + '字节</span>&nbsp;&nbsp;<span>阅读权限: '
+                        + download_level + '</span>&nbsp;&nbsp;<a id="del_' + storage_name
+                        + '" href="javascript:void(0)">删除</a></div>');
+                        $("#del_" + storage_name).bind("click", function () {
+                            del_attach(storage_name);
+                        });
+                    }
+                    else
+                        alert(data['message']);
+                }
+            });
+            $('.picker').colpick({
+                layout: 'hex',
+                submit: 0,
+                colorScheme: 'light',
+                onChange: function (hsb, hex, rgb, el, bySetColor) {
+                    $(el).css('border-color', '#' + hex);
+                    // Fill the text box just if the color was set using the picker, and not the colpickSetColor function.
+                    if (!bySetColor) $(el).val(hex);
+                }
+            }).keyup(function () {
+                $(this).colpickSetColor(this.value);
+            });
+        });
+    </script>
+{% endblock script_at_page_end %}
+

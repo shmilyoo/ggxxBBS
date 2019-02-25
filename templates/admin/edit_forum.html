@@ -1,0 +1,222 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>编辑版块</title>
+    {% load my_tag_filter %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+    <script src="{% static 'js/colpick.js' %}"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/colpick.css' %}"/>
+    <script>
+        if (!document.getElementById("main"))
+            top.location.href = {% url 'admin_index' %};
+    </script>
+</head>
+<body>
+<div>
+    <form method="post" id="editForumForm" enctype="multipart/form-data">
+        <div>
+            {{ form.non_field_errors }}{{ form.parent_id.errors }}
+            <label for="{{ form.belong.auto_id }}">{{ form.belong.label }}:</label>{{ form.belong|addattrs:"disabled=disabled" }}
+            &nbsp;&nbsp;<label
+                for="{{ form.parent_id.auto_id }}">{{ form.parent_id.label }}:</label>{{ form.parent_id|addattrs:"disabled=disabled" }}
+        </div>
+        <div>{{ form.name.errors }}<label for="{{ form.name.auto_id }}">{{ form.name.label }}:</label>{{ form.name }}
+        </div>
+        <div>{{ form.tag.errors }}<label
+                for="{{ form.tag.auto_id }}">{{ form.tag.label }}:</label>{{ form.tag|addattrs:"disabled=disabled" }}
+        </div>
+        <div>主题:
+            <span id="subjects_area"></span>
+            <button id="add_subject_btn">添加</button>
+        </div>
+        <div id="subject_modify_div" style="display: none">
+            <input id="subject_id" type="hidden"/>
+            名称:<input id="subject_name" width="50" type="text">&nbsp;
+            颜色:<input class="picker" readonly value="000000">&nbsp;
+            <button id="modify_subject_btn">加入</button>
+            <button id="del_subject_btn" style="visibility: hidden">删除</button>
+        </div>
+        <div>{{ form.descr.errors }}<label for="{{ form.descr.auto_id }}">{{ form.descr.label }}:</label></div>
+        <div>
+            {{ form.descr|addattrs:"style=width:100%" }}</div>
+        <div>{{ form.content.errors }}<label for="{{ form.content.auto_id }}">{{ form.content.label }}:</label></div>
+        <div>
+            {{ form.content|addattrs:"style=height:150px" }}</div>
+        <div>{{ form.allow_topic.errors }}<label
+                for="{{ form.allow_topic.auto_id }}">{{ form.allow_topic.label }}:</label>{{ form.allow_topic }}</div>
+        <div style="float: left;">
+            <img height="50" width="50" src="
+            {% if form.instance.icon %}
+                {{ form.instance.icon.url }}
+            {% else %}
+                {{ config.default_forum_icon_path }}
+            {% endif %}
+        "/>
+        </div>
+        <div style="float: left;">{{ form.icon.errors }}<label
+                for="{{ form.icon.auto_id }}">{{ form.icon.label }}:</label>{{ form.icon }}
+        </div><br/><br/><br/>
+        <div style="display: block">{{ form.topic_credit.errors }}<label
+                for="{{ form.topic_credit.auto_id }}">{{ form.topic_credit.label }}:</label>{{ form.topic_credit }}
+        </div>
+        <div>{{ form.post_credit.errors }}<label
+                for="{{ form.post_credit.auto_id }}">{{ form.post_credit.label }}:</label>{{ form.post_credit }}</div>
+        <div>{{ form.visit_level.errors }}<label
+                for="{{ form.visit_level.auto_id }}">{{ form.visit_level.label }}:</label>{{ form.visit_level }}</div>
+        <div>{{ form.topic_level.errors }}<label
+                for="{{ form.topic_level.auto_id }}">{{ form.topic_level.label }}:</label>{{ form.topic_level }}</div>
+        <div>{{ form.post_level.errors }}<label
+                for="{{ form.post_level.auto_id }}">{{ form.post_level.label }}:</label>{{ form.post_level }}</div>
+        <div><input id="btn" type="submit" value="保存"/></div>
+    </form>
+</div>
+
+</body>
+<script type="text/javascript">
+    function initial() {
+        //初始化父版块下拉框
+        var sel = $("#id_parent_id");
+        sel.empty();
+        sel.append('<option value=' + '{{ parent.id }}' + '>' + '{{ parent.name }}' + '</option>');
+        //禁用图片上传的清除按钮，这个按钮勾选后会出错
+        $("#icon-clear_id").attr("disabled", "disabled");
+    }
+    function show_edit_container() {
+        {# 点击每一个主题链接时，显示编辑主题的div#}
+        var subject_id = $(this).attr("id");
+        var subject_color = $(this).data("color");
+        var subject_name = $(this).text();
+        $("#modify_subject_btn").text("更新");
+        $("#subject_id").val(subject_id);
+        $("#subject_name").val(subject_name);
+        $(".picker").val(subject_color.replace("#", "")).css("border-right", "20px solid " + subject_color);
+        var s = $("#subject_modify_div");
+        var del = $("#del_subject_btn");
+        if (s.css("display") == "none")
+            s.slideDown('fast');
+        del.css("visibility", "visible");
+        return false;
+    }
+    function refresh_subjects_list() {
+        $.ajax({
+            type: "POST",
+            url: "{% url 'admin_subject_list' %}",
+            data: {'forum_id': "{{ form.instance.id }}"},
+            dataType: "json",
+            success: function (data) {
+                var subjects = data['data'];
+                var container = $("#subjects_area");
+                container.html("");
+                $.each(subjects, function (i, element) {
+                    container.append('"<a href="javascript:void(0)" id=' + element['id'] +
+                    ' data-color=' + element['color'] + ' style="color:' + element['color'] + '">' + element['name'] + '</a>"&nbsp;&nbsp;');
+                    $('#' + element['id']).bind("click", show_edit_container);
+                });
+            },
+            error: function () {
+                alert("信息提交失败");
+            }
+        });
+    }
+    $(function () {
+        initial();
+        refresh_subjects_list();
+        $("#add_subject_btn").click(function () {
+            $("#modify_subject_btn").text("加入");
+            $("#subject_name").val("");
+            $(".picker").val("000000").css("border-right", "20px solid #000000");
+            var s = $("#subject_modify_div");
+            if (s.css("display") == "none")
+                s.slideDown('fast');
+            var del = $("#del_subject_btn");
+            del.css("visibility", "hidden");
+            return false;
+        });
+        $("#del_subject_btn").click(function () {
+            if(!confirm("确认删除本主题？/n本主题关联的帖子将重新关联到默认主题"))
+                return false;
+            var subject_id = $("#subject_id").val();
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_subject_del' %}",
+                data: { 'forum_id': "{{ form.instance.id }}",'subject_id': subject_id },
+                dataType: "json",
+                success: function (data) {
+                    if (data['success']) {
+                        $("#subject_modify_div").slideUp('fast');
+                        refresh_subjects_list();
+                        return false;
+                    }
+                    else
+                        alert(data["message"])
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            });
+            return false;
+        });
+        $("#modify_subject_btn").click(function () {
+            var subject_name = $("#subject_name").val().trim();
+            var flag = $(this).text();
+            $.ajax({
+                type: "POST",
+                url: "{% url 'admin_subject_modify' %}",
+                data: {
+                    'forum_id': "{{ form.instance.id }}", 'subject_name': subject_name,
+                    'subject_color': $(".picker").val(), 'subject_id': $("#subject_id").val(),
+                    'btn_text': flag
+                },
+                dataType: "json",
+                success: function (data) {
+                    if (data['success']) {
+                        $("#subject_modify_div").slideUp('fast');
+                        refresh_subjects_list();
+                        return false;
+                    }
+                    else
+                        alert(data["message"])
+                },
+                error: function () {
+                    alert("信息提交失败");
+                }
+            });
+            return false;
+        });
+
+        $('.picker').colpick({
+            layout: 'hex',
+            submit: 0,
+            colorScheme: 'light',
+            onChange: function (hsb, hex, rgb, el, bySetColor) {
+                $(el).css('border-color', '#' + hex);
+                // Fill the text box just if the color was set using the picker, and not the colpickSetColor function.
+                if (!bySetColor) $(el).val(hex);
+            }
+        }).keyup(function () {
+            $(this).colpickSetColor(this.value);
+        });
+        $("#btn").click(function () {
+            $("#id_belong").removeAttr("disabled");
+            $("#id_parent_id").removeAttr("disabled");
+            $("#id_tag").removeAttr("disabled");
+            var data = CKEDITOR.instances.id_content.getData();
+            $("#id_content").val(data);
+        });
+        $("#editForumForm").ajaxForm({
+            dataType: "html",
+            url: "{% url 'admin_edit_forum' form.instance.id %}",
+            semantic: true,
+            beforeSubmit: function () {
+                //表单提交前做表单验证
+            },
+            success: function (responseText, statusText, xhr, $form) {
+                $("#main").html(responseText);
+            }
+        });
+    });
+</script>
+</html>

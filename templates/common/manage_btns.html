@@ -1,0 +1,15 @@
+{% if is_manager %}
+    <div class="manager_area">
+        {% if user.is_admin %}
+            <button class="manage_btn" value="{% url 'manage' 'all_top' %}">论坛置顶</button>
+            <button class="manage_btn" value="{% url 'manage' 'undo_all_top' %}">取消论坛置顶</button>
+        {% endif %}
+        <button class="manage_btn" value="{% url 'manage' 'top' %}">置顶</button>
+        <button class="manage_btn" value="{% url 'manage' 'undo_top' %}">取消置顶</button>
+        <button class="manage_btn" value="{% url 'manage' 'bottom' %}">下沉</button>
+        <button class="manage_btn" value="{% url 'manage' 'undo_bottom' %}">取消下沉</button>
+        <button class="manage_btn" value="{% url 'manage' 'digest' %}">精华</button>
+        <button class="manage_btn" value="{% url 'manage' 'undo_digest' %}">取消精华</button>
+        <button class="manage_btn" value="{% url 'manage' 'del' %}">删除</button>
+    </div>
+{% endif %}
